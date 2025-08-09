@@ -1,110 +1,75 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<title>ClaySim — Unified Launcher v1.1.1</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ClaySim — Unified Launcher v1.1.1a</title><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
-  :root { --sky:#cfe8ff; --ground:#bde5b4; --ink:#0f172a; --line:#e5e7eb; --ok:#16a34a; --bad:#ef4444; --accent:#4f46e5; --panel:#ffffff; --muted:#475569; }
-  html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e5e7eb;}
-  .app{display:grid; grid-template-rows: 1fr auto; height:100vh;}
-  .main{position:relative; min-height:0;}
-  .field{position:relative; background:linear-gradient(0deg, var(--ground) 42%, var(--sky) 42%); overflow:hidden; height:100%;}
-  #canvasShooter{width:100%; height:100%; display:block; cursor: crosshair;}
-  .toolbar{position:absolute; top:10px; left:10px; display:flex; gap:8px; z-index:30; flex-wrap:wrap;}
-  .toolbar button{padding:7px 10px; border-radius:10px; border:1px solid var(--line); background:#fff; color:#0f172a; cursor:pointer; font-weight:600;}
-  .hud{position:absolute; top:10px; right:10px; display:flex; gap:6px; z-index:25; align-items:center; flex-wrap:wrap;}
-  .badge{padding:6px 10px; background:#fff; border:1px solid var(--line); border-radius:999px; color:#0f172a; font-weight:600; font-size:12px;}
-  .status{padding:6px 8px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; color:#0f172a; font-size:12px;}
-  #dbg{position:absolute; bottom:8px; left:8px; background:#111827; color:#e5e7eb; padding:6px 8px; border-radius:8px; font-size:12px; z-index:15; opacity:0.95; min-width:220px;}
-  #log{position:absolute; bottom:8px; right:8px; background:#111827; color:#e5e7eb; padding:6px 8px; border-radius:8px; font-size:12px; z-index:15; opacity:0.95; width:36vw; max-height:24vh; overflow:auto; white-space:pre-wrap;}
-  .overhead{position:absolute; width:300px; height:200px; background:rgba(255,255,255,0.92); border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,0.25); z-index:20; display:none;}
-  .overhead .header{display:flex; justify-content:space-between; align-items:center; padding:6px 8px; user-select:none; border-bottom:1px solid #e5e7eb; background:#f8fafc; border-radius:12px 12px 0 0; font-size:12px; color:#111827; font-weight:700;}
-  .overhead .body{padding:6px;}
-  #canvasOver{width:100%; height:150px; display:block; border-radius:8px; background:#f8fafc;}
-  .sheetWrap{background:#fff; border-top:1px solid #e5e7eb; color:#0f172a;}
-  .sheetBar{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; flex-wrap:wrap;}
-  .small{font-size:12px;color:#374151}
-  .sheet{padding:8px 10px; overflow:auto;}
-  table{border-collapse:collapse; width:100%; font-size:12px;}
-  th,td{border:1px solid #d1d5db; padding:4px 6px; text-align:center;}
-  th.name, td.name{position:sticky; left:0; background:#fff; text-align:left; min-width:160px;}
-  th.total, td.total{position:sticky; right:0; background:#fff; min-width:52px;}
-  .grp{border-right:2px solid #9ca3af;}
-  .groupLabel th{background:#f8fafc; font-weight:700; border-bottom:2px solid #9ca3af;}
-  .activeCell{outline:2px solid var(--accent); outline-offset:-2px; background:#eef2ff;}
-
-  .drawer{position:absolute; top:0; left:0; bottom:0; width:320px; background:#0f172a; color:#e5e7eb; border-right:1px solid #1f2937; padding:12px; overflow:auto; z-index:40;}
-  .drawer h2{margin:6px 0 8px 0; font-size:16px;}
-  .formRow{margin-bottom:10px;}
-  label{display:block; font-size:12px; margin-bottom:4px; color:#cbd5e1;}
-  input,select{width:100%; padding:8px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e5e7eb; box-sizing:border-box;}
-  .playerCard{border:1px solid #334155; border-radius:12px; padding:8px; margin-bottom:8px;}
-  .muted{color:#94a3b8; font-size:12px;}
-  .pillrow{display:flex; gap:8px; flex-wrap:wrap;}
-  .pillrow button{padding:6px 10px; border-radius:999px; border:1px solid #334155; background:#0b1220; color:#e5e7eb; cursor:pointer;}
-  .pillrow button.active{background:#334155;}
-  .disabled{opacity:.4; pointer-events:none;}
+:root{--sky:#cfe8ff;--ground:#bde5b4;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--accent:#4f46e5}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e5e7eb}
+.app{display:grid;grid-template-rows:1fr auto;height:100vh}.main{position:relative;min-height:0}
+.field{position:relative;background:linear-gradient(0deg,var(--ground) 42%,var(--sky) 42%);overflow:hidden;height:100%}
+#canvasShooter{width:100%;height:100%;display:block;cursor:crosshair}
+.toolbar{position:absolute;top:10px;left:10px;display:flex;gap:8px;z-index:30;flex-wrap:wrap}
+.toolbar button{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;color:#0f172a;cursor:pointer;font-weight:600}
+.hud{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:25;align-items:center;flex-wrap:wrap}
+.badge{padding:6px 10px;background:#fff;border:1px solid var(--line);border-radius:999px;color:#0f172a;font-weight:600;font-size:12px}
+.status{padding:6px 8px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#0f172a;font-size:12px}
+#dbg{position:absolute;bottom:8px;left:8px;background:#111827;color:#e5e7eb;padding:6px 8px;border-radius:8px;font-size:12px;z-index:15;opacity:.95;min-width:220px}
+#log{position:absolute;bottom:8px;right:8px;background:#111827;color:#e5e7eb;padding:6px 8px;border-radius:8px;font-size:12px;z-index:15;opacity:.95;width:36vw;max-height:24vh;overflow:auto;white-space:pre-wrap}
+.overhead{position:absolute;width:300px;height:200px;background:rgba(255,255,255,.92);border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.25);z-index:20;display:none}
+.overhead .header{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;user-select:none;border-bottom:1px solid #e5e7eb;background:#f8fafc;border-radius:12px 12px 0 0;font-size:12px;color:#111827;font-weight:700}
+.overhead .body{padding:6px}#canvasOver{width:100%;height:150px;display:block;border-radius:8px;background:#f8fafc}
+.sheetWrap{background:#fff;border-top:1px solid #e5e7eb;color:#0f172a}.sheetBar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;flex-wrap:wrap}
+.small{font-size:12px;color:#374151}.sheet{padding:8px 10px;overflow:auto}table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border:1px solid #d1d5db;padding:4px 6px;text-align:center}th.name,td.name{position:sticky;left:0;background:#fff;text-align:left;min-width:160px}
+th.total,td.total{position:sticky;right:0;background:#fff;min-width:52px}.grp{border-right:2px solid #9ca3af}
+.groupLabel th{background:#f8fafc;font-weight:700;border-bottom:2px solid #9ca3af}.activeCell{outline:2px solid var(--accent);outline-offset:-2px;background:#eef2ff}
+.drawer{position:absolute;top:0;left:0;bottom:0;width:320px;background:#0f172a;color:#e5e7eb;border-right:1px solid #1f2937;padding:12px;overflow:auto;z-index:40}
+.drawer h2{margin:6px 0 8px 0;font-size:16px}.formRow{margin-bottom:10px}label{display:block;font-size:12px;margin-bottom:4px;color:#cbd5e1}
+input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e5e7eb;box-sizing:border-box}
+.playerCard{border:1px solid #334155;border-radius:12px;padding:8px;margin-bottom:8px}.muted{color:#94a3b8;font-size:12px}
+.pillrow{display:flex;gap:8px;flex-wrap:wrap}.pillrow button{padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#0b1220;color:#e5e7eb;cursor:pointer}
+.pillrow button.active{background:#334155}.disabled{opacity:.4;pointer-events:none}
+.cellDbl{display:grid;grid-template-rows:1fr 1fr;row-gap:2px}.cellTop,.cellBot{min-height:10px}
 </style>
-</head>
-<body>
+</head><body>
 <div class="app">
-
   <div class="main">
     <aside id="drawer" class="drawer">
       <h2>ClaySim — Setup</h2>
-
-      <div class="formRow">
-        <label>Discipline</label>
+      <div class="formRow"><label>Discipline</label>
         <div class="pillrow">
           <button id="dTrap" class="active">Trap</button>
           <button id="dSkeet" class="disabled">Skeet (soon)</button>
           <button id="dSporting" class="disabled">Sporting (soon)</button>
         </div>
       </div>
-
-      <div class="formRow">
-        <label>Variant (Trap)</label>
+      <div class="formRow"><label>Variant (Trap)</label>
         <div class="pillrow">
           <button id="vATA" class="active">ATA</button>
           <button id="vBunker" class="disabled">Olympic/Bunker (soon)</button>
         </div>
       </div>
-
-      <div class="formRow" id="rowModes">
-        <label>Game Mode</label>
+      <div class="formRow" id="rowModes"><label>Game Mode</label>
         <select id="modeSelect">
           <option value="ATA_SINGLES">Singles (16 yd)</option>
           <option value="ATA_HANDICAP">Handicap (18–27 yd)</option>
           <option value="ATA_DOUBLES">Doubles</option>
         </select>
       </div>
-
-      <div class="formRow">
-        <label>Number of Shooters</label>
-        <select id="numShooters">
-          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-        </select>
+      <div class="formRow"><label>Number of Shooters</label>
+        <select id="numShooters"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
       </div>
-
       <div id="players"></div>
-      <div class="formRow">
-        <button id="btnStart" class="primary" style="width:100%;">Start / Apply</button>
-      </div>
+      <div class="formRow"><button id="btnStart" style="width:100%;">Start / Apply</button></div>
       <div class="muted">Shortcuts: Space=Pull • Click=Fire • O=Overhead • P=Pause</div>
     </aside>
 
     <section class="field">
       <canvas id="canvasShooter"></canvas>
-
       <div class="toolbar">
         <button id="btnToggleOver">Overhead (O)</button>
-        <button id="btnPull" class="primary">Pull (Space)</button>
+        <button id="btnPull">Pull (Space)</button>
         <button id="btnReset">Reset Round</button>
         <button id="btnPause">Pause (P)</button>
         <span class="small" style="display:inline-flex;align-items:center;gap:6px;color:#fff;">Zoom <input id="zoom" type="range" min="0.8" max="1.4" value="1.0" step="0.02"/></span>
       </div>
-
       <div class="hud">
         <span class="badge" id="hudMode">ATA Singles</span>
         <span class="badge" id="hudShooter">P1</span>
@@ -113,22 +78,19 @@
         <span class="badge" id="hudShells">Shells: 0/2</span>
         <span class="status" id="hudStatus">Ready</span>
       </div>
-
       <div id="dbg">booting…</div>
       <div id="log"></div>
 
       <div id="overPanel" class="overhead" style="left: calc(100% - 320px); top: 70px;">
         <div class="header"><span>Overhead</span><button id="btnCloseOver" style="border:1px solid #e5e7eb;border-radius:8px;padding:2px 8px;background:#fff;cursor:pointer;">Hide</button></div>
-        <div class="body">
-          <canvas id="canvasOver" width="300" height="150"></canvas>
-        </div>
+        <div class="body"><canvas id="canvasOver" width="300" height="150"></canvas></div>
       </div>
     </section>
   </div>
 
   <div class="sheetWrap">
     <div class="sheetBar">
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <h2 id="sheetTitle" style="margin:0;">ATA — Score Sheet</h2>
         <div class="small" id="sheetLegend">X = first-shot dead • / = second-shot dead • 0 = lost</div>
       </div>
@@ -136,393 +98,232 @@
     </div>
     <div class="sheet"><table id="scoreTable"></table></div>
   </div>
-
 </div>
 
 <script>
 "use strict";
 (function(){
-  // ===== Logging =====
-  var logEl = document.getElementById('log');
-  var dbgEl = document.getElementById('dbg');
-  function log(m){ var t=new Date().toLocaleTimeString(); logEl.textContent += "["+t+"] "+m+"\n"; logEl.scrollTop = logEl.scrollHeight; }
-  function dbg(m){ dbgEl.textContent = m; }
+  // ---------- utils ----------
+  var logEl=document.getElementById('log'), dbgEl=document.getElementById('dbg');
+  function log(m){var t=new Date().toLocaleTimeString();logEl.textContent+="["+t+"] "+m+"\\n";logEl.scrollTop=logEl.scrollHeight}
+  function dbg(m){dbgEl.textContent=m}
 
-  // ===== Controls & Setup =====
-  var modeSel=document.getElementById('modeSelect');
-  var numShootersSel=document.getElementById('numShooters');
-  var playersDiv=document.getElementById('players');
-  var btnStart=document.getElementById('btnStart');
-
-  // Overhead panel
+  // ---------- controls ----------
+  var modeSel=document.getElementById('modeSelect'), numShootersSel=document.getElementById('numShooters'),
+      playersDiv=document.getElementById('players'), btnStart=document.getElementById('btnStart');
   var overPanel=document.getElementById('overPanel');
-  document.getElementById('btnToggleOver').onclick=function(){ overPanel.style.display = (overPanel.style.display==='none' ? 'block' : 'none'); };
-  document.getElementById('btnCloseOver').onclick=function(){ overPanel.style.display='none'; };
-
-  // Pause
-  var btnPause=document.getElementById('btnPause');
-  var paused=false;
-  btnPause.onclick=function(){ paused=!paused; btnPause.textContent = paused ? "Resume (P)" : "Pause (P)"; };
-  document.addEventListener('visibilitychange', function(){ paused = document.hidden; btnPause.textContent = paused ? "Resume (P)" : "Pause (P)"; });
+  document.getElementById('btnToggleOver').onclick=function(){overPanel.style.display=(overPanel.style.display==='none'?'block':'none')};
+  document.getElementById('btnCloseOver').onclick=function(){overPanel.style.display='none'};
+  var btnPause=document.getElementById('btnPause'), paused=false;
+  btnPause.onclick=function(){paused=!paused;btnPause.textContent=paused?"Resume (P)":"Pause (P)";};
+  document.addEventListener('visibilitychange',function(){paused=document.hidden;btnPause.textContent=paused?"Resume (P)":"Pause (P)";});
 
   // HUD
-  var hudMode=document.getElementById('hudMode');
-  var hudShooter=document.getElementById('hudShooter');
-  var hudPost=document.getElementById('hudPost');
-  var hudYdg=document.getElementById('hudYdg');
-  var hudShells=document.getElementById('hudShells');
-  var hudStatus=document.getElementById('hudStatus');
+  var hudMode=document.getElementById('hudMode'), hudShooter=document.getElementById('hudShooter'),
+      hudPost=document.getElementById('hudPost'), hudYdg=document.getElementById('hudYdg'),
+      hudShells=document.getElementById('hudShells'), hudStatus=document.getElementById('hudStatus');
 
-  // Score UI
-  var sheetTitle=document.getElementById('sheetTitle');
-  var sheetLegend=document.getElementById('sheetLegend');
-  var table=document.getElementById('scoreTable');
+  // score UI
+  var sheetTitle=document.getElementById('sheetTitle'), sheetLegend=document.getElementById('sheetLegend'),
+      table=document.getElementById('scoreTable');
 
-  // Constants
-  var INCH=0.0254, yd=0.9144, g=9.81;
-  var POST_SPACING=2.74;
+  // ---------- constants ----------
+  var INCH=0.0254, yd=0.9144, g=9.81, POST_SPACING=2.74;
   var COLORS=['#7c3aed','#2563eb','#059669','#f59e0b','#ef4444'];
 
-  // Canvases
-  var cS=document.getElementById('canvasShooter'); var gS=cS.getContext('2d');
-  var cO=document.getElementById('canvasOver'); var gO=cO.getContext('2d');
+  // ---------- canvases ----------
+  var cS=document.getElementById('canvasShooter'), gS=cS.getContext('2d');
+  var cO=document.getElementById('canvasOver'), gO=cO.getContext('2d');
   var SW=1280, SH=720, SCX=SW*0.5, SCY=SH*0.42, baseF=820, zoom=1.0, f=baseF;
-
   function resizeCanvas(){
-    var dpr=Math.max(1, window.devicePixelRatio||1);
+    var dpr=Math.max(1,window.devicePixelRatio||1);
     var rect=document.querySelector('.field').getBoundingClientRect();
     cS.width=Math.floor(rect.width*dpr); cS.height=Math.floor(rect.height*dpr);
     cS.style.width=rect.width+'px'; cS.style.height=rect.height+'px';
     SW=cS.width; SH=cS.height; SCX=SW*0.5; SCY=SH*0.42; f=baseF*dpr*zoom;
   }
-  resizeCanvas(); window.addEventListener('resize', resizeCanvas);
-  document.getElementById('zoom').oninput=function(e){ zoom=parseFloat(e.target.value); resizeCanvas(); };
+  resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+  document.getElementById('zoom').oninput=function(e){zoom=parseFloat(e.target.value);resizeCanvas();};
+  var OW=cO.width, OH=cO.height, POSTS_X=[-2*POST_SPACING,-POST_SPACING,0,POST_SPACING,2*POST_SPACING];
 
-  var OW=cO.width, OH=cO.height;
-  var POSTS_X=[-2*POST_SPACING,-POST_SPACING,0,POST_SPACING,2*POST_SPACING];
-
-  // Camera
+  // camera
   var camX=0, camY=-16*yd, camZ=1.5;
-  function project(X,Y,Z){
-    var Xc=X-camX, Yc=Y-camY, Zc=Z-camZ;
-    var d=Math.max(0.1,Yc);
-    return { x:(SCX+f*(Xc/d)), y:(SCY-f*(Zc/d)), d:d };
-  }
+  function project(X,Y,Z){var Xc=X-camX,Yc=Y-camY,Zc=Z-camZ,d=Math.max(0.1,Yc);return {x:(SCX+f*(Xc/d)),y:(SCY-f*(Zc/d)),d:d};}
 
-  // Choke model
-  var CHOKE_R40_IN = { 'Full': 10, 'Modified': 12.5, 'Improved Cylinder': 15, 'Cylinder': 17.5 };
-  function chokeRadiusAtDistancePx(chokeName, distY_m){
-    var R40_in = CHOKE_R40_IN[chokeName] || 12.5;
-    var distY_yd = Math.max(1e-3, distY_m / yd);
-    var R_in = R40_in * (distY_yd / 40.0);
-    var ppm = f / Math.max(0.1, distY_m);
-    var scaleVal = parseFloat(document.getElementById('hitRadiusScale').value||'1.0');
-    return (R_in * INCH) * ppm * scaleVal;
+  // choke model
+  var CHOKE_R40_IN={'Full':10,'Modified':12.5,'Improved Cylinder':15,'Cylinder':17.5};
+  function chokeRadiusAtDistancePx(chokeName,distY_m){
+    var R40=CHOKE_R40_IN[chokeName]||12.5, distY_yd=Math.max(1e-3,distY_m/yd);
+    var R_in=R40*(distY_yd/40.0), ppm=f/Math.max(0.1,distY_m);
+    var scaleVal=parseFloat(document.getElementById('hitRadiusScale').value||'1.0');
+    return (R_in*INCH)*ppm*scaleVal;
   }
-  // show scale value
   var hr=document.getElementById('hitRadiusScale'), hrVal=document.getElementById('hitRVal');
-  hr.oninput=function(){ hrVal.textContent = parseFloat(hr.value).toFixed(2)+'×'; };
+  hr.oninput=function(){hrVal.textContent=parseFloat(hr.value).toFixed(2)+'×'};
 
-  // Shared sim state
-  var sim = {
-    mode: 'ATA_SINGLES',
-    shooters: [], activeIdx: 0,
-    shells: 0, shotLock: false, running: true, throwing: false,
-    clays: [], pellets: []
-  };
+  // sim state
+  var sim={mode:'ATA_SINGLES',shooters:[],activeIdx:0,shells:0,shotLock:false,running:true,throwing:false,clays:[],pellets:[]};
 
-  function playerCard(i, withYardage){
-    var ydField = withYardage ? '<div class="formRow"><label>Yardage</label><select id="p'+i+'ydg">'+['18','19','20','21','22','23','24','25','26','27'].map(function(v){return '<option '+(v==='18'?'selected':'')+'>'+v+'</option>';}).join('')+'</select></div>' : '';
+  // players UI
+  function playerCard(i,withY){
+    var ydField=withY?('<div class="formRow"><label>Yardage</label><select id="p'+i+'ydg">'+['18','19','20','21','22','23','24','25','26','27'].map(function(v){return '<option '+(v==='18'?'selected':'')+'>'+v+'</option>';}).join('')+'</select></div>'):'';
     return '<div class="playerCard">'
-      + '<div class="formRow"><label>Name</label><input id="p'+i+'name" value="Player '+i+'"></div>'
-      + ydField
-      + '<div class="formRow"><label>Top Choke</label><select id="p'+i+'top"><option>Full</option><option selected>Modified</option><option>Improved Cylinder</option><option>Cylinder</option></select></div>'
-      + '<div class="formRow"><label>Bottom Choke</label><select id="p'+i+'bot"><option>Full</option><option>Modified</option><option selected>Improved Cylinder</option><option>Cylinder</option></select></div>'
-      + '</div>';
+      +'<div class="formRow"><label>Name</label><input id="p'+i+'name" value="Player '+i+'"></div>'
+      +ydField
+      +'<div class="formRow"><label>Top Choke</label><select id="p'+i+'top"><option>Full</option><option selected>Modified</option><option>Improved Cylinder</option><option>Cylinder</option></select></div>'
+      +'<div class="formRow"><label>Bottom Choke</label><select id="p'+i+'bot"><option>Full</option><option>Modified</option><option selected>Improved Cylinder</option><option>Cylinder</option></select></div>'
+      +'</div>';
   }
-  function buildPlayersUI(){
-    var n=parseInt(numShootersSel.value,10);
-    var withY = (modeSel.value==='ATA_HANDICAP'); // yardage only in handicap
-    var html=''; for(var i=1;i<=n;i++){ html+=playerCard(i, withY); }
-    playersDiv.innerHTML=html;
-  }
-  numShootersSel.onchange=buildPlayersUI;
-  modeSel.onchange=function(){ buildPlayersUI(); updateHeaders(); };
-  buildPlayersUI();
+  function buildPlayersUI(){var n=parseInt(numShootersSel.value,10), withY=(modeSel.value==='ATA_HANDICAP'); var html=''; for(var i=1;i<=n;i++) html+=playerCard(i,withY); playersDiv.innerHTML=html;}
+  numShootersSel.onchange=buildPlayersUI; modeSel.onchange=function(){buildPlayersUI();updateHeaders();}; buildPlayersUI();
 
-  // Headers / legends per mode
+  // headers per mode
   function updateHeaders(){
-    if(modeSel.value==='ATA_DOUBLES'){
-      sheetTitle.textContent='ATA Doubles — Score Sheet (25 pairs)';
-      sheetLegend.textContent='Top = 1st shot • Bottom = 2nd shot • X/ = dead • 0 = lost';
-      hudMode.textContent='ATA Doubles';
-    }else if(modeSel.value==='ATA_HANDICAP'){
-      sheetTitle.textContent='ATA Handicap — Score Sheet (25 targets)';
-      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
-      hudMode.textContent='ATA Handicap';
-    }else{
-      sheetTitle.textContent='ATA Singles — Score Sheet (25 targets)';
-      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
-      hudMode.textContent='ATA Singles';
-    }
+    if(modeSel.value==='ATA_DOUBLES'){sheetTitle.textContent='ATA Doubles — Score Sheet (25 pairs)'; sheetLegend.textContent='Top = 1st shot • Bottom = 2nd shot • X/ = dead • 0 = lost'; hudMode.textContent='ATA Doubles';}
+    else if(modeSel.value==='ATA_HANDICAP'){sheetTitle.textContent='ATA Handicap — Score Sheet (25 targets)'; sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost'; hudMode.textContent='ATA Handicap';}
+    else{sheetTitle.textContent='ATA Singles — Score Sheet (25 targets)'; sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost'; hudMode.textContent='ATA Singles';}
   }
   updateHeaders();
 
-  // Build round from UI
+  // build round
   btnStart.onclick=function(){
-    var n=parseInt(numShootersSel.value,10);
-    sim.mode = modeSel.value;
-    sim.shooters=[];
+    var n=parseInt(numShootersSel.value,10); sim.mode=modeSel.value; sim.shooters=[];
     for(var i=1;i<=n;i++){
-      var y = (sim.mode==='ATA_HANDICAP') ? parseInt(document.getElementById('p'+i+'ydg').value||'18',10) : 16;
-      sim.shooters.push({
-        name:(document.getElementById('p'+i+'name').value||('Player '+i)),
-        yardage: (sim.mode==='ATA_HANDICAP') ? Math.max(18, Math.min(27,y)) : 16,
-        top:document.getElementById('p'+i+'top').value, bot:document.getElementById('p'+i+'bot').value,
-        nextBarrel:'Top', post:i, col:1, shotsAtPost:0, pairsAtPost:0, lastMark:null, topMark:null, botMark:null
-      });
+      var y=(sim.mode==='ATA_HANDICAP')?parseInt(document.getElementById('p'+i+'ydg').value||'18',10):16;
+      sim.shooters.push({name:(document.getElementById('p'+i+'name').value||('Player '+i)), yardage:(sim.mode==='ATA_HANDICAP')?Math.max(18,Math.min(27,y)):16, top:document.getElementById('p'+i+'top').value, bot:document.getElementById('p'+i+'bot').value, nextBarrel:'Top', post:i, col:1, shotsAtPost:0, pairsAtPost:0, lastMark:null, topMark:null, botMark:null});
     }
     sim.activeIdx=0; sim.shells=0; sim.shotLock=false; sim.running=true; sim.throwing=false; sim.clays.length=0; sim.pellets.length=0;
     buildScoreTable(sim.shooters.length); fillScoreNames(); drawOverhead(); setCameraToActiveShooter(); syncHUD(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
-    hudStatus.textContent='Running';
-    log('Applied: '+sim.mode+' for '+n+' shooter(s)');
+    hudStatus.textContent='Running'; log('Applied: '+sim.mode+' for '+n+' shooter(s)');
   };
 
-  // Score table builders
+  // score table
   function buildScoreTable(n){
     if(sim.mode==='ATA_DOUBLES'){
-      var thead='<tr class="groupLabel"><th class="name">Name</th>';
-      for(var i=1;i<=25;i++){ thead+='<th class="'+((i%5===0)?'grp':'')+'">'+i+'</th>'; }
-      thead+='<th class="total">Total/50</th></tr>';
-      var rows='';
-      for(var r=0;r<n;r++){
-        rows+='<tr data-row="'+r+'"><td class="name"><b class="nm"></b></td>';
-        for(var c=1;c<=25;c++){ rows+='<td data-col="'+c+'" class="'+((c%5===0)?'grp':'')+'"><div class="cellDbl"><div class="cellTop"></div><div class="cellBot"></div></div></td>'; }
-        rows+='<td class="total">0</td></tr>';
-      }
+      var thead='<tr class="groupLabel"><th class="name">Name</th>'; for(var i=1;i<=25;i++) thead+='<th class="'+((i%5===0)?'grp':'')+'">'+i+'</th>'; thead+='<th class="total">Total/50</th></tr>';
+      var rows=''; for(var r=0;r<n;r++){ rows+='<tr data-row="'+r+'"><td class="name"><b class="nm"></b></td>'; for(var c=1;c<=25;c++) rows+='<td data-col="'+c+'" class="'+((c%5===0)?'grp':'')+'"><div class="cellDbl"><div class="cellTop"></div><div class="cellBot"></div></div></td>'; rows+='<td class="total">0</td></tr>'; }
       table.innerHTML=thead+rows;
-    }else{ // singles/handicap
-      var thead='<tr class="groupLabel"><th class="name">Class & Name</th>';
-      for(var p=1;p<=5;p++){ for(var i=1;i<=5;i++){ var idx=(p-1)*5+i; thead+='<th class="'+((idx%5===0)?'grp':'')+'">'+idx+'</th>'; } }
-      thead+='<th class="total">Total</th></tr>';
-      thead+='<tr class="groupLabel"><th class="name">Post</th>';
-      for(var p2=1;p2<=5;p2++){ for(var j=1;j<=5;j++){ thead+='<th class="'+((j===5)?'grp':'')+'">'+(j===3?('P'+p2):'')+'</th>'; } }
-      thead+='<th class="total"></th></tr>';
-      var rows='';
-      for(var r=0;r<n;r++){
-        rows += '<tr data-row="'+r+'"><td class="name"><span class="cls"></span> <b class="nm"></b></td>';
-        for(var c=1;c<=25;c++){ rows += '<td data-col="'+c+'" class="'+((c%5===0)?'grp':'')+'"></td>'; }
-        rows += '<td class="total">0</td></tr>';
-      }
-      table.innerHTML=thead+rows;
+    }else{
+      var thead2='<tr class="groupLabel"><th class="name">Class & Name</th>'; for(var p=1;p<=5;p++){ for(var i2=1;i2<=5;i2++){ var idx=(p-1)*5+i2; thead2+='<th class="'+((idx%5===0)?'grp':'')+'">'+idx+'</th>'; } } thead2+='<th class="total">Total</th></tr>';
+      thead2+='<tr class="groupLabel"><th class="name">Post</th>'; for(var p2=1;p2<=5;p2++){ for(var j=1;j<=5;j++){ thead2+='<th class="'+((j===5)?'grp':'')+'">'+(j===3?('P'+p2):'')+'</th>'; } } thead2+='<th class="total"></th></tr>';
+      var rows2=''; for(var r2=0;r2<n;r2++){ rows2+='<tr data-row="'+r2+'"><td class="name"><span class="cls"></span> <b class="nm"></b></td>'; for(var c2=1;c2<=25;c2++) rows2+='<td data-col="'+c2+'" class="'+((c2%5===0)?'grp':'')+'"></td>'; rows2+='<td class="total">0</td></tr>'; }
+      table.innerHTML=thead2+rows2;
     }
   }
   function fillScoreNames(){ for(var i=0;i<sim.shooters.length;i++){ var row=table.querySelector('tr[data-row="'+i+'"]'); row.querySelector('.nm').textContent=sim.shooters[i].name; var cls=row.querySelector('.cls'); if(cls) cls.textContent=''; } }
-  function markScore(rowIdx, colIdx, mark){
-    var row=table.querySelector('tr[data-row="'+rowIdx+'"]');
-    var cell=row.querySelector('td[data-col="'+colIdx+'"]'); if(!cell) return;
-    cell.textContent = mark; cell.style.color = (mark==='0') ? 'var(--bad)' : 'var(--ok)';
-    if(mark!=='0'){ var totalTd=row.querySelector('.total'); totalTd.textContent = (parseInt(totalTd.textContent||'0',10) + 1); }
-  }
-  function markPair(rowIdx, colIdx, topMark, botMark){
-    var row=table.querySelector('tr[data-row="'+rowIdx+'"]');
-    var cell=row.querySelector('td[data-col="'+colIdx+'"] .cellDbl'); if(!cell) return;
-    var topEl=cell.querySelector('.cellTop'), botEl=cell.querySelector('.cellBot');
-    topEl.textContent = topMark; topEl.className = 'cellTop '+(topMark==='0'?'bad':'ok');
-    botEl.textContent = botMark; botEl.className = 'cellBot '+(botMark==='0'?'bad':'ok');
-    var gain = (topMark!=='0') + (botMark!=='0');
-    var totalTd=row.querySelector('.total'); totalTd.textContent = (parseInt(totalTd.textContent||'0',10) + gain);
-  }
-  function highlight(rowIdx, colIdx){
-    var tds=table.querySelectorAll('td'); for(var i=0;i<tds.length;i++){ tds[i].classList.remove('activeCell'); }
-    var row=table.querySelector('tr[data-row="'+rowIdx+'"]'); if(!row) return;
-    var cell;
-    if(sim.mode==='ATA_DOUBLES'){ cell=row.querySelector('td[data-col="'+colIdx+'"] .cellDbl'); }
-    else{ cell=row.querySelector('td[data-col="'+colIdx+'"]'); }
-    if(cell) cell.classList.add('activeCell');
-  }
+  function markScore(rowIdx,colIdx,mark){ var row=table.querySelector('tr[data-row="'+rowIdx+'"]'); var cell=row.querySelector('td[data-col="'+colIdx+'"]'); if(!cell) return; cell.textContent=mark; cell.style.color=(mark==='0')?'var(--bad)':'var(--ok)'; if(mark!=='0'){ var totalTd=row.querySelector('.total'); totalTd.textContent=(parseInt(totalTd.textContent||'0',10)+1); } }
+  function markPair(rowIdx,colIdx,topMark,botMark){ var row=table.querySelector('tr[data-row="'+rowIdx+'"]'); var cell=row.querySelector('td[data-col="'+colIdx+'"] .cellDbl'); if(!cell) return; var topEl=cell.querySelector('.cellTop'), botEl=cell.querySelector('.cellBot'); topEl.textContent=topMark; topEl.className='cellTop '+(topMark==='0'?'bad':'ok'); botEl.textContent=botMark; botEl.className='cellBot '+(botMark==='0'?'bad':'ok'); var gain=(topMark!=='0')+(botMark!=='0'); var totalTd=row.querySelector('.total'); totalTd.textContent=(parseInt(totalTd.textContent||'0',10)+gain); }
+  function highlight(rowIdx,colIdx){ var tds=table.querySelectorAll('td'); for(var i=0;i<tds.length;i++) tds[i].classList.remove('activeCell'); var row=table.querySelector('tr[data-row="'+rowIdx+'"]'); if(!row) return; var cell=(sim.mode==='ATA_DOUBLES')?row.querySelector('td[data-col="'+colIdx+'"] .cellDbl'):row.querySelector('td[data-col="'+colIdx+'"]'); if(cell) cell.classList.add('activeCell'); }
 
-  // ===== Interaction (pull, click) =====
-  document.getElementById('btnPull').onclick=function(){ handlePull(); };
-  window.addEventListener('keydown', function(e){
-    if(e.code==='Space'){ e.preventDefault(); handlePull(); }
-    if(e.key==='p' || e.key==='P'){ paused=!paused; btnPause.textContent = paused ? "Resume (P)" : "Pause (P)"; }
-  });
-  document.getElementById('btnReset').onclick=function(){ resetRound(); };
+  // interaction
+  document.getElementById('btnPull').onclick=function(){handlePull();};
+  window.addEventListener('keydown',function(e){ if(e.code==='Space'){e.preventDefault();handlePull();} if(e.key==='p'||e.key==='P'){paused=!paused;btnPause.textContent=paused?"Resume (P)":"Pause (P)";} });
+  document.getElementById('btnReset').onclick=function(){resetRound();};
 
-  function resetRound(){
-    if(sim.shooters.length===0) return;
-    sim.shooters.forEach(function(s,i){
-      s.col=1; s.post=i+1; s.shotsAtPost=0; s.pairsAtPost=0; s.nextBarrel='Top'; s.lastMark=null; s.topMark=null; s.botMark=null;
-    });
-    sim.activeIdx=0; sim.shells=0; sim.shotLock=false; sim.throwing=false; sim.clays.length=0; sim.pellets.length=0; sim.running=true;
-    buildScoreTable(sim.shooters.length); fillScoreNames(); drawOverhead(); setCameraToActiveShooter(); syncHUD(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
-    hudStatus.textContent='Running';
-    log('Round reset');
-  }
+  function resetRound(){ if(sim.shooters.length===0) return; sim.shooters.forEach(function(s,i){ s.col=1;s.post=i+1;s.shotsAtPost=0;s.pairsAtPost=0;s.nextBarrel='Top';s.lastMark=null;s.topMark=null;s.botMark=null; }); sim.activeIdx=0;sim.shells=0;sim.shotLock=false;sim.throwing=false;sim.clays.length=0;sim.pellets.length=0;sim.running=true; buildScoreTable(sim.shooters.length);fillScoreNames();drawOverhead();setCameraToActiveShooter();syncHUD();highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col); hudStatus.textContent='Running'; log('Round reset'); }
 
-  // ===== HUD sync =====
-  function syncHUD(){
-    if(sim.shooters.length===0){ hudShooter.textContent='P1'; hudPost.textContent='Post 1'; hudYdg.textContent='16 yd'; hudShells.textContent='Shells: 0/2'; return; }
-    var s=sim.shooters[sim.activeIdx];
-    hudShooter.textContent = s.name;
-    hudPost.textContent = 'Post '+s.post;
-    var ydg = (sim.mode==='ATA_HANDICAP') ? (s.yardage+' yd') : '16 yd';
-    hudYdg.textContent = ydg;
-    hudShells.textContent = 'Shells: '+sim.shells+'/2';
-  }
+  function syncHUD(){ if(sim.shooters.length===0){hudShooter.textContent='P1';hudPost.textContent='Post 1';hudYdg.textContent='16 yd';hudShells.textContent='Shells: 0/2';return;} var s=sim.shooters[sim.activeIdx]; hudShooter.textContent=s.name; hudPost.textContent='Post '+s.post; hudYdg.textContent=(sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):'16 yd'; hudShells.textContent='Shells: '+sim.shells+'/2'; }
 
-  // ===== Camera by active shooter =====
-  function setCameraToActiveShooter(){
-    if(sim.shooters.length===0) return;
-    var s=sim.shooters[sim.activeIdx];
-    var postIndex = (s.post-1);
-    camX = POSTS_X[postIndex];
-    var yUsed = (sim.mode==='ATA_HANDICAP') ? s.yardage : 16;
-    camY = - yUsed * yd;
-    camZ = 1.5;
-  }
+  function setCameraToActiveShooter(){ if(sim.shooters.length===0) return; var s=sim.shooters[sim.activeIdx], postIndex=(s.post-1); camX=POSTS_X[postIndex]; var yUsed=(sim.mode==='ATA_HANDICAP')?s.yardage:16; camY= - yUsed*yd; camZ=1.5; }
 
-  // ===== Physics / World =====
+  // throwing
   function throwAtaSingle(){
-    var az=(Math.random()*34 - 17)*Math.PI/180;
-    var y10=9.144;
-    var h10=2.44 + Math.random()*(3.05-2.44);
-    var v=31 + (Math.random()-0.5)*2;
-    var bestTh=0.2, bestErr=1e-9;
-    for(var deg=6; deg<=24; deg+=0.1){
-      var th=deg*Math.PI/180;
-      var vy=v*Math.cos(th)*Math.cos(az);
-      var t10=y10/Math.max(0.1,vy);
-      var z10=0.5 + v*Math.sin(th)*t10 - 0.5*g*t10*t10;
-      var err=Math.abs(z10 - h10);
-      if(err<bestErr){ bestErr=err; bestTh=th; }
-    }
+    var az=(Math.random()*34-17)*Math.PI/180, y10=9.144, h10=2.44+Math.random()*(3.05-2.44), v=31+(Math.random()-0.5)*2, bestTh=0.2,bestErr=1e-9;
+    for(var deg=6;deg<=24;deg+=0.1){ var th=deg*Math.PI/180, vy=v*Math.cos(th)*Math.cos(az), t10=y10/Math.max(0.1,vy), z10=0.5+v*Math.sin(th)*t10-0.5*g*t10*t10, err=Math.abs(z10-h10); if(err<bestErr){bestErr=err;bestTh=th;} }
     var thFinal=bestTh;
-    sim.clays.push({ x:0,y:0,z:0.5, vx:(v*Math.cos(thFinal)*Math.sin(az)), vy:(v*Math.cos(thFinal)*Math.cos(az)), vz:(v*Math.sin(thFinal)), broken:false, owner:sim.activeIdx, col: sim.shooters[sim.activeIdx].col });
+    sim.clays.push({x:0,y:0,z:0.5,vx:(v*Math.cos(thFinal)*Math.sin(az)),vy:(v*Math.cos(thFinal)*Math.cos(az)),vz:(v*Math.sin(thFinal)),broken:false,owner:sim.activeIdx,col:sim.shooters[sim.activeIdx].col});
   }
   function throwAtaPair(){
-    function one(az){
-      var y10=9.144, h10=2.44 + Math.random()*(3.05-2.44), v=30.5 + (Math.random()-0.5)*1.5;
-      var bestTh=0.2, bestErr=1e-9;
-      for(var deg=6; deg<=24; deg+=0.2){
-        var th=deg*Math.PI/180, vy=v*Math.cos(th)*Math.cos(az), t10=y10/Math.max(0.1,vy);
-        var z10=0.5 + v*Math.sin(th)*t10 - 0.5*g*t10*t10, err=Math.abs(z10 - h10);
-        if(err<bestErr){ bestErr=err; bestTh=th; }
-      }
-      var thFinal=bestTh;
-      return { x:0,y:0,z:0.5, vx:(v*Math.cos(thFinal)*Math.sin(az)), vy:(v*Math.cos(thFinal)*Math.cos(az)), vz:(v*Math.sin(thFinal)), broken:false, owner:sim.activeIdx, col: sim.shooters[sim.activeIdx].col };
+    function one(az){ var y10=9.144,h10=2.44+Math.random()*(3.05-2.44),v=30.5+(Math.random()-0.5)*1.5,bestTh=0.2,bestErr=1e-9;
+      for(var deg=6;deg<=24;deg+=0.2){ var th=deg*Math.PI/180,vy=v*Math.cos(th)*Math.cos(az),t10=y10/Math.max(0.1,vy),z10=0.5+v*Math.sin(th)*t10-0.5*g*t10*t10,err=Math.abs(z10-h10); if(err<bestErr){bestErr=err;bestTh=th;} }
+      var thFinal=bestTh; return {x:0,y:0,z:0.5,vx:(v*Math.cos(thFinal)*Math.sin(az)),vy:(v*Math.cos(thFinal)*Math.cos(az)),vz:(v*Math.sin(thFinal)),broken:false,owner:sim.activeIdx,col:sim.shooters[sim.activeIdx].col};
     }
-    var azL = (-10 - Math.random()*7)*Math.PI/180, azR=(10 + Math.random()*7)*Math.PI/180;
-    sim.clays.push(one(azL)); sim.clays.push(one(azR));
+    var azL=(-10-Math.random()*7)*Math.PI/180, azR=(10+Math.random()*7)*Math.PI/180; sim.clays.push(one(azL)); sim.clays.push(one(azR));
   }
-
   function loadGun(){ sim.shells=2; sim.shotLock=false; sim.shooters[sim.activeIdx].nextBarrel='Top'; syncHUD(); }
+  function handlePull(){ if(!sim.running||sim.shooters.length===0||sim.throwing) return; if(sim.mode==='ATA_DOUBLES'){ var s=sim.shooters[sim.activeIdx]; s.topMark=null;s.botMark=null; loadGun(); sim.throwing=true; throwAtaPair(); log('Pair thrown.'); } else { loadGun(); sim.throwing=true; throwAtaSingle(); log('Target thrown.'); } }
 
-  function handlePull(){
-    if(!sim.running || sim.shooters.length===0 || sim.throwing) return;
-    if(sim.mode==='ATA_DOUBLES'){
-      var s=sim.shooters[sim.activeIdx]; s.topMark=null; s.botMark=null;
-      loadGun(); sim.throwing=true; throwAtaPair(); log('Pair thrown.');
-    }else{
-      loadGun(); sim.throwing=true; throwAtaSingle(); log('Target thrown.');
-    }
-  }
+  function getCanvasCoords(e){ var rect=cS.getBoundingClientRect(),scaleX=cS.width/rect.width,scaleY=cS.height/rect.height; return {mx:(e.clientX-rect.left)*scaleX,my:(e.clientY-rect.top)*scaleY}; }
+  cS.addEventListener('click',function(e){ if(!sim.running||sim.shooters.length===0) return; fireShot(getCanvasCoords(e)); });
 
-  function getCanvasCoords(e){
-    var rect=cS.getBoundingClientRect();
-    var scaleX=cS.width/rect.width, scaleY=cS.height/rect.height;
-    return { mx:(e.clientX-rect.left)*scaleX, my:(e.clientY-rect.top)*scaleY };
-  }
-  cS.addEventListener('click', function(e){
-    if(!sim.running || sim.shooters.length===0) return;
-    fireShot(getCanvasCoords(e));
-  });
-
-  function endTarget(){
-    var s=sim.shooters[sim.activeIdx];
-    if(s.lastMark==null) s.lastMark='0';
-    markScore(sim.activeIdx, s.col, s.lastMark);
-    s.col++; s.shotsAtPost++; s.lastMark=null;
-    sim.throwing=false; sim.shells=0;
-    sim.activeIdx = (sim.activeIdx + 1) % sim.shooters.length;
-    var allFive=true; for(var i=0;i<sim.shooters.length;i++){ if(sim.shooters[i].shotsAtPost<5){ allFive=false; break; } }
+  function endTarget(){ var s=sim.shooters[sim.activeIdx]; if(s.lastMark==null) s.lastMark='0'; markScore(sim.activeIdx,s.col,s.lastMark); s.col++; s.shotsAtPost++; s.lastMark=null; sim.throwing=false; sim.shells=0; sim.activeIdx=(sim.activeIdx+1)%sim.shooters.length;
+    var allFive=true; for(var i=0;i<sim.shooters.length;i++){ if(sim.shooters[i].shotsAtPost<5){allFive=false;break;} }
     if(allFive){ for(var k=0;k<sim.shooters.length;k++){ sim.shooters[k].shotsAtPost=0; sim.shooters[k].post=(sim.shooters[k].post%5)+1; } }
-    setCameraToActiveShooter(); drawOverhead(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
-    var done=true; for(var m=0;m<sim.shooters.length;m++){ if(sim.shooters[m].col<=25){ done=false; break; } }
-    if(done){ sim.running=false; hudStatus.textContent='Round Complete'; }
-    syncHUD();
+    setCameraToActiveShooter(); drawOverhead(); highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
+    var done=true; for(var m=0;m<sim.shooters.length;m++){ if(sim.shooters[m].col<=25){done=false;break;} }
+    if(done){ sim.running=false; hudStatus.textContent='Round Complete'; } syncHUD();
   }
-  function endPair(){
-    var s=sim.shooters[sim.activeIdx];
-    if(s.topMark===null) s.topMark='0';
-    if(s.botMark===null) s.botMark='0';
-    markPair(sim.activeIdx, s.col, s.topMark, s.botMark);
-    s.col++; s.pairsAtPost++; s.topMark=null; s.botMark=null;
-    sim.throwing=false; sim.shells=0; syncHUD();
-    sim.activeIdx = (sim.activeIdx + 1) % sim.shooters.length;
-    var allFive=true; for(var i=0;i<sim.shooters.length;i++){ if(sim.shooters[i].pairsAtPost<5){ allFive=false; break; } }
+  function endPair(){ var s=sim.shooters[sim.activeIdx]; if(s.topMark===null) s.topMark='0'; if(s.botMark===null) s.botMark='0'; markPair(sim.activeIdx,s.col,s.topMark,s.botMark);
+    s.col++; s.pairsAtPost++; s.topMark=null; s.botMark=null; sim.throwing=false; sim.shells=0; syncHUD(); sim.activeIdx=(sim.activeIdx+1)%sim.shooters.length;
+    var allFive=true; for(var i=0;i<sim.shooters.length;i++){ if(sim.shooters[i].pairsAtPost<5){allFive=false;break;} }
     if(allFive){ for(var k=0;k<sim.shooters.length;k++){ sim.shooters[k].pairsAtPost=0; sim.shooters[k].post=(sim.shooters[k].post%5)+1; } }
-    setCameraToActiveShooter(); drawOverhead(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
-    var done=true; for(var m=0;m<sim.shooters.length;m++){ if(sim.shooters[m].col<=25){ done=false; break; } }
+    setCameraToActiveShooter(); drawOverhead(); highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
+    var done=true; for(var m=0;m<sim.shooters.length;m++){ if(sim.shooters[m].col<=25){done=false;break;} }
     if(done){ sim.running=false; hudStatus.textContent='Round Complete'; }
-    syncHUD();
   }
 
   function fireShot(pos){
-    if(sim.shells<=0 || sim.shotLock || !sim.running) return;
-    sim.shotLock=true; setTimeout(function(){ sim.shotLock=false; }, 110);
-    var s=sim.shooters[sim.activeIdx];
-    var using=s.nextBarrel; s.nextBarrel=(using==='Top')?'Bottom':'Top';
-    var chokeName=(using==='Top')?s.top:s.bot;
-    var wasFirstShot = (sim.shells===2);
-    sim.shells--; syncHUD();
+    if(sim.shells<=0||sim.shotLock||!sim.running) return;
+    sim.shotLock=true; setTimeout(function(){sim.shotLock=false;},110);
+    var s=sim.shooters[sim.activeIdx], using=s.nextBarrel; s.nextBarrel=(using==='Top')?'Bottom':'Top';
+    var chokeName=(using==='Top')?s.top:s.bot, wasFirstShot=(sim.shells===2); sim.shells--; syncHUD();
     // pellets visual
     var pelletsCount=180, spreadPx=8;
-    for(var i=0;i<pelletsCount;i++){
-      var u=Math.random()+1e-6, v=Math.random()+1e-6;
-      var mag=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-      var r=Math.abs(mag)*spreadPx, t=Math.random()*Math.PI*2;
-      sim.pellets.push({x:(pos.mx + r*Math.cos(t)), y:(pos.my + r*Math.sin(t)), life:(0.14 + Math.random()*0.12)});
-    }
+    for(var i=0;i<pelletsCount;i++){ var u=Math.random()+1e-6,v=Math.random()+1e-6,mag=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v),r=Math.abs(mag)*spreadPx,t=Math.random()*Math.PI*2; sim.pellets.push({x:(pos.mx+r*Math.cos(t)),y:(pos.my+r*Math.sin(t)),life:(0.14+Math.random()*0.12)}); }
     // hit test
-    var targetIdx=-1, bestD=1e9;
-    for(var j=0;j<sim.clays.length;j++){
-      var cc=sim.clays[j]; if(cc.broken) continue;
-      var pp=project(cc.x, cc.y, cc.z);
-      var dpx=Math.hypot(pos.mx - pp.x, pos.my - pp.y);
-      var distY=(cc.y - camY);
-      var Rpx=chokeRadiusAtDistancePx(chokeName, Math.max(1.0, distY));
-      if(dpx <= Rpx && dpx<bestD){ bestD=dpx; targetIdx=j; }
-    }
+    var targetIdx=-1,bestD=1e9; for(var j=0;j<sim.clays.length;j++){ var cc=sim.clays[j]; if(cc.broken) continue; var pp=project(cc.x,cc.y,cc.z); var dpx=Math.hypot(pos.mx-pp.x,pos.my-pp.y); var distY=(cc.y-camY); var Rpx=chokeRadiusAtDistancePx(chokeName,Math.max(1.0,distY)); if(dpx<=Rpx && dpx<bestD){bestD=dpx; targetIdx=j;} }
     var hit=false;
-    if(targetIdx>=0){
-      sim.clays[targetIdx].broken=true;
-      hit=true;
-      if(sim.mode==='ATA_DOUBLES'){
-        if(using==='Top'){ s.topMark='X'; } else { s.botMark='/'; }
-      }else{
-        s.lastMark = wasFirstShot ? 'X' : '/';
-      }
-    }
-    if(sim.mode==='ATA_DOUBLES'){
-      var alive=0; for(var k=0;k<sim.clays.length;k++){ if(!sim.clays[k].broken) alive++; }
-      if(sim.shells===0 || alive===0){ endPair(); }
+    if(targetIdx>=0){ sim.clays[targetIdx].broken=true; hit=true; if(sim.mode==='ATA_DOUBLES'){ if(using==='Top') s.topMark='X'; else s.botMark='/'; } else { s.lastMark=wasFirstShot?'X':'/'; } }
+    if(sim.mode==='ATA_DOUBLES'){ var alive=0; for(var k=0;k<sim.clays.length;k++) if(!sim.clays[k].broken) alive++; if(sim.shells===0||alive===0) endPair();
     }else{
-      if(hit && wasFirstShot){
-        // Auto-advance after short delay; ignore second shell
-        sim.shells=0;
-        setTimeout(endTarget, 180);
-      }else if(sim.shells===0){
-        if(!s.lastMark) s.lastMark='0';
-        endTarget();
-      }
+      if(hit && wasFirstShot){ sim.shells=0; setTimeout(endTarget,180); }
+      else if(sim.shells===0){ if(!s.lastMark) s.lastMark='0'; endTarget(); }
     }
   }
 
-  // ===== Render loop =====
+  // render
   function renderShooter(){
-    // draw background grid
     gS.clearRect(0,0,cS.width,cS.height);
     gS.strokeStyle='rgba(0,0,0,0.08)';
-    for(var gy=2; gy<=60; gy+=2){ var a=project
+    for(var gy=2;gy<=60;gy+=2){ var a=project(-25*yd,gy*yd,0),b=project(25*yd,gy*yd,0); gS.beginPath(); gS.moveTo(a.x,a.y); gS.lineTo(b.x,b.y); gS.stroke(); }
+    for(var gx=-25;gx<=25;gx+=2){ var a2=project(gx*yd,2*yd,0),b2=project(gx*yd,60*yd,0); gS.beginPath(); gS.moveTo(a2.x,a2.y); gS.lineTo(b2.x,b2.y); gS.stroke(); }
+    // trap house
+    var f1=project(-2,0,0.2), f2=project(2,0,0.2), l1=project(-2.5,-0.5,0.6), l2=project(2.5,-0.5,0.6);
+    gS.fillStyle='#555'; gS.beginPath(); gS.moveTo(f1.x,f1.y); gS.lineTo(f2.x,f2.y); gS.lineTo(l2.x,l2.y); gS.lineTo(l1.x,l1.y); gS.closePath(); gS.fill(); gS.strokeStyle='#333'; gS.stroke();
+
+    // pellets
+    gS.fillStyle='#111';
+    for(var pi=sim.pellets.length-1; pi>=0; pi--){ var p=sim.pellets[pi]; gS.beginPath(); gS.arc(p.x,p.y,1.2,0,Math.PI*2); gS.fill(); p.life-=1/60; if(p.life<=0) sim.pellets.splice(pi,1); }
+
+    // clays
+    if(!paused){
+      for(var ci=0;ci<sim.clays.length;ci++){
+        var c=sim.clays[ci]; if(c.broken) continue;
+        var pr=project(c.x,c.y,c.z); gS.fillStyle='#111'; gS.beginPath(); gS.arc(pr.x,pr.y,6,0,Math.PI*2); gS.fill();
+        c.x+=c.vx*(1/60); c.y+=c.vy*(1/60); c.z+=c.vz*(1/60)-0.5*g*(1/60)*(1/60); c.vz-=g*(1/60);
+        if(c.z<=0 || c.y>55*yd || Math.abs(c.x)>27*yd){ c.broken=true; if(sim.mode!=='ATA_DOUBLES'){ var s=sim.shooters[sim.activeIdx]; if(s&&s.lastMark==null) s.lastMark='0'; endTarget(); } }
+      }
+    }else{
+      for(var ci2=0;ci2<sim.clays.length;ci2++){ var c2=sim.clays[ci2]; if(c2.broken) continue; var pr2=project(c2.x,c2.y,c2.z); gS.fillStyle='#111'; gS.beginPath(); gS.arc(pr2.x,pr2.y,6,0,Math.PI*2); gS.fill(); }
+    }
+    requestAnimationFrame(renderShooter);
+  }
+  requestAnimationFrame(renderShooter);
+
+  // overhead
+  function drawOverhead(){
+    gO.clearRect(0,0,OW,OH);
+    var cx=OW/2, cy=OH*0.9, scale=9*0.5;
+    gO.fillStyle='#6b7280'; gO.fillRect(cx-8,cy-6,16,12);
+    gO.strokeStyle='#e2e8f0'; gO.lineWidth=1;
+    for(var ydLine=16; ydLine<=27; ydLine++){ var r=ydLine*yd*scale; gO.beginPath(); gO.arc(cx,cy,r,Math.PI,Math.PI*2); gO.stroke(); if(ydLine%2===0){ gO.fillStyle='#334155'; gO.font='10px system-ui'; gO.textAlign='left'; gO.fillText(ydLine+' yd', cx+4, cy-r-2); } }
+    var r27=27*yd*scale, left=Math.tan(-17*Math.PI/180)*(-r27), right=Math.tan(17*Math.PI/180)*(-r27);
+    gO.beginPath(); gO.moveTo(cx,cy); gO.lineTo(cx+left,cy-r27); gO.moveTo(cx,cy); gO.lineTo(cx+right,cy-r27); gO.strokeStyle='#cbd5e1'; gO.stroke();
+    for(var i=0;i<sim.shooters.length;i++){ var s=sim.shooters[i], yard=(sim.mode==='ATA_HANDICAP')?s.yardage:16, r2=yard*yd*scale, xOffset=POSTS_X[(s.post-1)]*scale, px=cx+xOffset, py=cy-r2; gO.fillStyle=COLORS[i%COLORS.length]; gO.beginPath(); gO.arc(px,py,7,0,Math.PI*2); gO.fill(); gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(i+1),px,py); if(i===sim.activeIdx){ gO.strokeStyle=COLORS[i%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(px,py,11,0,Math.PI*2); gO.stroke(); } }
+  }
+
+  // initial debug
+  dbg('ready'); log('Loaded v1.1.1a');
+})();
+</script>
+</body></html>
