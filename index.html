@@ -1,4 +1,4 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ClaySim — Unified Launcher v1.1.1a</title><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ClaySim — Unified Launcher v1.1.1b</title><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
 :root{--sky:#cfe8ff;--ground:#bde5b4;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--accent:#4f46e5}
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e5e7eb}
@@ -19,7 +19,7 @@ html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Robo
 .small{font-size:12px;color:#374151}.sheet{padding:8px 10px;overflow:auto}table{border-collapse:collapse;width:100%;font-size:12px}
 th,td{border:1px solid #d1d5db;padding:4px 6px;text-align:center}th.name,td.name{position:sticky;left:0;background:#fff;text-align:left;min-width:160px}
 th.total,td.total{position:sticky;right:0;background:#fff;min-width:52px}.grp{border-right:2px solid #9ca3af}
-.groupLabel th{background:#f8fafc;font-weight:700;border-bottom:2px solid #9ca3af}.activeCell{outline:2px solid var(--accent);outline-offset:-2px;background:#eef2ff}
+.groupLabel th{background:#f8fafc;font-weight:700;border-bottom:2px solid #9ca3af}.activeCell{outline:2px solid var(--accent);outline-offset:-2px;background:#eef4ff}
 .drawer{position:absolute;top:0;left:0;bottom:0;width:320px;background:#0f172a;color:#e5e7eb;border-right:1px solid #1f2937;padding:12px;overflow:auto;z-index:40}
 .drawer h2{margin:6px 0 8px 0;font-size:16px}.formRow{margin-bottom:10px}label{display:block;font-size:12px;margin-bottom:4px;color:#cbd5e1}
 input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e5e7eb;box-sizing:border-box}
@@ -109,22 +109,42 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   function dbg(m){dbgEl.textContent=m}
 
   // ---------- controls ----------
-  var modeSel=document.getElementById('modeSelect'), numShootersSel=document.getElementById('numShooters'),
-      playersDiv=document.getElementById('players'), btnStart=document.getElementById('btnStart');
+  var modeSel=document.getElementById('modeSelect'),
+      numShootersSel=document.getElementById('numShooters'),
+      playersDiv=document.getElementById('players'),
+      btnStart=document.getElementById('btnStart');
+
+  // Overhead
   var overPanel=document.getElementById('overPanel');
-  document.getElementById('btnToggleOver').onclick=function(){overPanel.style.display=(overPanel.style.display==='none'?'block':'none')};
-  document.getElementById('btnCloseOver').onclick=function(){overPanel.style.display='none'};
+  function toggleOverhead(){
+    overPanel.style.display = (overPanel.style.display==='none' || !overPanel.style.display) ? 'block' : 'none';
+  }
+  document.getElementById('btnToggleOver').onclick=function(){ toggleOverhead(); };
+  document.getElementById('btnCloseOver').onclick=function(){ overPanel.style.display='none'; };
+
+  // Pause
   var btnPause=document.getElementById('btnPause'), paused=false;
-  btnPause.onclick=function(){paused=!paused;btnPause.textContent=paused?"Resume (P)":"Pause (P)";};
-  document.addEventListener('visibilitychange',function(){paused=document.hidden;btnPause.textContent=paused?"Resume (P)":"Pause (P)";});
+  function applyPauseUI(){
+    btnPause.textContent = paused ? "Resume (P)" : "Pause (P)";
+    document.getElementById('btnPull').disabled = paused;
+  }
+  btnPause.onclick=function(){ paused=!paused; applyPauseUI(); };
+  document.addEventListener('visibilitychange', function(){
+    paused = document.hidden;
+    applyPauseUI();
+  });
 
   // HUD
-  var hudMode=document.getElementById('hudMode'), hudShooter=document.getElementById('hudShooter'),
-      hudPost=document.getElementById('hudPost'), hudYdg=document.getElementById('hudYdg'),
-      hudShells=document.getElementById('hudShells'), hudStatus=document.getElementById('hudStatus');
+  var hudMode=document.getElementById('hudMode'),
+      hudShooter=document.getElementById('hudShooter'),
+      hudPost=document.getElementById('hudPost'),
+      hudYdg=document.getElementById('hudYdg'),
+      hudShells=document.getElementById('hudShells'),
+      hudStatus=document.getElementById('hudStatus');
 
   // score UI
-  var sheetTitle=document.getElementById('sheetTitle'), sheetLegend=document.getElementById('sheetLegend'),
+  var sheetTitle=document.getElementById('sheetTitle'),
+      sheetLegend=document.getElementById('sheetLegend'),
       table=document.getElementById('scoreTable');
 
   // ---------- constants ----------
@@ -194,7 +214,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     }
     sim.activeIdx=0; sim.shells=0; sim.shotLock=false; sim.running=true; sim.throwing=false; sim.clays.length=0; sim.pellets.length=0;
     buildScoreTable(sim.shooters.length); fillScoreNames(); drawOverhead(); setCameraToActiveShooter(); syncHUD(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
-    hudStatus.textContent='Running'; log('Applied: '+sim.mode+' for '+n+' shooter(s)');
+    hudStatus.textContent='Running'; applyPauseUI(); log('Applied: '+sim.mode+' for '+n+' shooter(s)');
   };
 
   // score table
@@ -217,14 +237,34 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
 
   // interaction
   document.getElementById('btnPull').onclick=function(){handlePull();};
-  window.addEventListener('keydown',function(e){ if(e.code==='Space'){e.preventDefault();handlePull();} if(e.key==='p'||e.key==='P'){paused=!paused;btnPause.textContent=paused?"Resume (P)":"Pause (P)";} });
+  window.addEventListener('keydown',function(e){
+    if(e.code==='Space'){e.preventDefault();handlePull();}
+    if(e.key==='p'||e.key==='P'){paused=!paused;applyPauseUI();}
+    if(e.key==='o'||e.key==='O'){toggleOverhead();}
+  });
   document.getElementById('btnReset').onclick=function(){resetRound();};
 
-  function resetRound(){ if(sim.shooters.length===0) return; sim.shooters.forEach(function(s,i){ s.col=1;s.post=i+1;s.shotsAtPost=0;s.pairsAtPost=0;s.nextBarrel='Top';s.lastMark=null;s.topMark=null;s.botMark=null; }); sim.activeIdx=0;sim.shells=0;sim.shotLock=false;sim.throwing=false;sim.clays.length=0;sim.pellets.length=0;sim.running=true; buildScoreTable(sim.shooters.length);fillScoreNames();drawOverhead();setCameraToActiveShooter();syncHUD();highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col); hudStatus.textContent='Running'; log('Round reset'); }
+  function resetRound(){
+    if(sim.shooters.length===0) return;
+    sim.shooters.forEach(function(s,i){ s.col=1;s.post=i+1;s.shotsAtPost=0;s.pairsAtPost=0;s.nextBarrel='Top';s.lastMark=null;s.topMark=null;s.botMark=null; });
+    sim.activeIdx=0;sim.shells=0;sim.shotLock=false;sim.throwing=false;sim.clays.length=0;sim.pellets.length=0;sim.running=true;
+    buildScoreTable(sim.shooters.length);fillScoreNames();drawOverhead();setCameraToActiveShooter();syncHUD();highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
+    hudStatus.textContent='Running'; applyPauseUI(); log('Round reset');
+  }
 
-  function syncHUD(){ if(sim.shooters.length===0){hudShooter.textContent='P1';hudPost.textContent='Post 1';hudYdg.textContent='16 yd';hudShells.textContent='Shells: 0/2';return;} var s=sim.shooters[sim.activeIdx]; hudShooter.textContent=s.name; hudPost.textContent='Post '+s.post; hudYdg.textContent=(sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):'16 yd'; hudShells.textContent='Shells: '+sim.shells+'/2'; }
+  function syncHUD(){
+    if(sim.shooters.length===0){hudShooter.textContent='P1';hudPost.textContent='Post 1';hudYdg.textContent='16 yd';hudShells.textContent='Shells: 0/2';return;}
+    var s=sim.shooters[sim.activeIdx];
+    hudShooter.textContent=s.name; hudPost.textContent='Post '+s.post; hudYdg.textContent=(sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):'16 yd';
+    hudShells.textContent='Shells: '+sim.shells+'/2';
+  }
 
-  function setCameraToActiveShooter(){ if(sim.shooters.length===0) return; var s=sim.shooters[sim.activeIdx], postIndex=(s.post-1); camX=POSTS_X[postIndex]; var yUsed=(sim.mode==='ATA_HANDICAP')?s.yardage:16; camY= - yUsed*yd; camZ=1.5; }
+  function setCameraToActiveShooter(){
+    if(sim.shooters.length===0) return;
+    var s=sim.shooters[sim.activeIdx], postIndex=(s.post-1);
+    camX=POSTS_X[postIndex];
+    var yUsed=(sim.mode==='ATA_HANDICAP')?s.yardage:16; camY= - yUsed*yd; camZ=1.5;
+  }
 
   // throwing
   function throwAtaSingle(){
@@ -240,21 +280,44 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     }
     var azL=(-10-Math.random()*7)*Math.PI/180, azR=(10+Math.random()*7)*Math.PI/180; sim.clays.push(one(azL)); sim.clays.push(one(azR));
   }
+
   function loadGun(){ sim.shells=2; sim.shotLock=false; sim.shooters[sim.activeIdx].nextBarrel='Top'; syncHUD(); }
-  function handlePull(){ if(!sim.running||sim.shooters.length===0||sim.throwing) return; if(sim.mode==='ATA_DOUBLES'){ var s=sim.shooters[sim.activeIdx]; s.topMark=null;s.botMark=null; loadGun(); sim.throwing=true; throwAtaPair(); log('Pair thrown.'); } else { loadGun(); sim.throwing=true; throwAtaSingle(); log('Target thrown.'); } }
+
+  function handlePull(){
+    if(paused || !sim.running || sim.shooters.length===0 || sim.throwing) return;
+    if(sim.mode==='ATA_DOUBLES'){
+      var s=sim.shooters[sim.activeIdx]; s.topMark=null; s.botMark=null;
+      loadGun(); sim.throwing=true; throwAtaPair(); log('Pair thrown.');
+    }else{
+      loadGun(); sim.throwing=true; throwAtaSingle(); log('Target thrown.');
+    }
+  }
 
   function getCanvasCoords(e){ var rect=cS.getBoundingClientRect(),scaleX=cS.width/rect.width,scaleY=cS.height/rect.height; return {mx:(e.clientX-rect.left)*scaleX,my:(e.clientY-rect.top)*scaleY}; }
   cS.addEventListener('click',function(e){ if(!sim.running||sim.shooters.length===0) return; fireShot(getCanvasCoords(e)); });
 
-  function endTarget(){ var s=sim.shooters[sim.activeIdx]; if(s.lastMark==null) s.lastMark='0'; markScore(sim.activeIdx,s.col,s.lastMark); s.col++; s.shotsAtPost++; s.lastMark=null; sim.throwing=false; sim.shells=0; sim.activeIdx=(sim.activeIdx+1)%sim.shooters.length;
+  function endTarget(){
+    var s=sim.shooters[sim.activeIdx]; if(s.lastMark==null) s.lastMark='0';
+    markScore(sim.activeIdx,s.col,s.lastMark);
+    s.col++; s.shotsAtPost++; s.lastMark=null;
+    sim.throwing=false; sim.shells=0;
+    sim.activeIdx=(sim.activeIdx+1)%sim.shooters.length;
     var allFive=true; for(var i=0;i<sim.shooters.length;i++){ if(sim.shooters[i].shotsAtPost<5){allFive=false;break;} }
     if(allFive){ for(var k=0;k<sim.shooters.length;k++){ sim.shooters[k].shotsAtPost=0; sim.shooters[k].post=(sim.shooters[k].post%5)+1; } }
     setCameraToActiveShooter(); drawOverhead(); highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
     var done=true; for(var m=0;m<sim.shooters.length;m++){ if(sim.shooters[m].col<=25){done=false;break;} }
-    if(done){ sim.running=false; hudStatus.textContent='Round Complete'; } syncHUD();
+    if(done){ sim.running=false; hudStatus.textContent='Round Complete'; }
+    syncHUD();
   }
-  function endPair(){ var s=sim.shooters[sim.activeIdx]; if(s.topMark===null) s.topMark='0'; if(s.botMark===null) s.botMark='0'; markPair(sim.activeIdx,s.col,s.topMark,s.botMark);
-    s.col++; s.pairsAtPost++; s.topMark=null; s.botMark=null; sim.throwing=false; sim.shells=0; syncHUD(); sim.activeIdx=(sim.activeIdx+1)%sim.shooters.length;
+
+  function endPair(){
+    var s=sim.shooters[sim.activeIdx];
+    if(s.topMark===null) s.topMark='0';
+    if(s.botMark===null) s.botMark='0';
+    markPair(sim.activeIdx,s.col,s.topMark,s.botMark);
+    s.col++; s.pairsAtPost++; s.topMark=null; s.botMark=null;
+    sim.throwing=false; sim.shells=0; syncHUD();
+    sim.activeIdx=(sim.activeIdx+1)%sim.shooters.length;
     var allFive=true; for(var i=0;i<sim.shooters.length;i++){ if(sim.shooters[i].pairsAtPost<5){allFive=false;break;} }
     if(allFive){ for(var k=0;k<sim.shooters.length;k++){ sim.shooters[k].pairsAtPost=0; sim.shooters[k].post=(sim.shooters[k].post%5)+1; } }
     setCameraToActiveShooter(); drawOverhead(); highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
@@ -263,18 +326,33 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   }
 
   function fireShot(pos){
-    if(sim.shells<=0||sim.shotLock||!sim.running) return;
+    if(paused || sim.shells<=0 || sim.shotLock || !sim.running) return;
     sim.shotLock=true; setTimeout(function(){sim.shotLock=false;},110);
     var s=sim.shooters[sim.activeIdx], using=s.nextBarrel; s.nextBarrel=(using==='Top')?'Bottom':'Top';
     var chokeName=(using==='Top')?s.top:s.bot, wasFirstShot=(sim.shells===2); sim.shells--; syncHUD();
+
     // pellets visual
     var pelletsCount=180, spreadPx=8;
     for(var i=0;i<pelletsCount;i++){ var u=Math.random()+1e-6,v=Math.random()+1e-6,mag=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v),r=Math.abs(mag)*spreadPx,t=Math.random()*Math.PI*2; sim.pellets.push({x:(pos.mx+r*Math.cos(t)),y:(pos.my+r*Math.sin(t)),life:(0.14+Math.random()*0.12)}); }
+
     // hit test
-    var targetIdx=-1,bestD=1e9; for(var j=0;j<sim.clays.length;j++){ var cc=sim.clays[j]; if(cc.broken) continue; var pp=project(cc.x,cc.y,cc.z); var dpx=Math.hypot(pos.mx-pp.x,pos.my-pp.y); var distY=(cc.y-camY); var Rpx=chokeRadiusAtDistancePx(chokeName,Math.max(1.0,distY)); if(dpx<=Rpx && dpx<bestD){bestD=dpx; targetIdx=j;} }
+    var targetIdx=-1,bestD=1e9;
+    for(var j=0;j<sim.clays.length;j++){
+      var cc=sim.clays[j]; if(cc.broken) continue;
+      var pp=project(cc.x,cc.y,cc.z); var dpx=Math.hypot(pos.mx-pp.x,pos.my-pp.y);
+      var distY=(cc.y-camY); var Rpx=chokeRadiusAtDistancePx(chokeName,Math.max(1.0,distY));
+      if(dpx<=Rpx && dpx<bestD){bestD=dpx; targetIdx=j;}
+    }
     var hit=false;
-    if(targetIdx>=0){ sim.clays[targetIdx].broken=true; hit=true; if(sim.mode==='ATA_DOUBLES'){ if(using==='Top') s.topMark='X'; else s.botMark='/'; } else { s.lastMark=wasFirstShot?'X':'/'; } }
-    if(sim.mode==='ATA_DOUBLES'){ var alive=0; for(var k=0;k<sim.clays.length;k++) if(!sim.clays[k].broken) alive++; if(sim.shells===0||alive===0) endPair();
+    if(targetIdx>=0){
+      sim.clays[targetIdx].broken=true; hit=true;
+      if(sim.mode==='ATA_DOUBLES'){ if(using==='Top') s.topMark='X'; else s.botMark='/'; }
+      else { s.lastMark=wasFirstShot?'X':'/'; }
+    }
+
+    if(sim.mode==='ATA_DOUBLES'){
+      var alive=0; for(var k=0;k<sim.clays.length;k++) if(!sim.clays[k].broken) alive++;
+      if(sim.shells===0 || alive===0) endPair();
     }else{
       if(hit && wasFirstShot){ sim.shells=0; setTimeout(endTarget,180); }
       else if(sim.shells===0){ if(!s.lastMark) s.lastMark='0'; endTarget(); }
@@ -287,6 +365,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     gS.strokeStyle='rgba(0,0,0,0.08)';
     for(var gy=2;gy<=60;gy+=2){ var a=project(-25*yd,gy*yd,0),b=project(25*yd,gy*yd,0); gS.beginPath(); gS.moveTo(a.x,a.y); gS.lineTo(b.x,b.y); gS.stroke(); }
     for(var gx=-25;gx<=25;gx+=2){ var a2=project(gx*yd,2*yd,0),b2=project(gx*yd,60*yd,0); gS.beginPath(); gS.moveTo(a2.x,a2.y); gS.lineTo(b2.x,b2.y); gS.stroke(); }
+
     // trap house
     var f1=project(-2,0,0.2), f2=project(2,0,0.2), l1=project(-2.5,-0.5,0.6), l2=project(2.5,-0.5,0.6);
     gS.fillStyle='#555'; gS.beginPath(); gS.moveTo(f1.x,f1.y); gS.lineTo(f2.x,f2.y); gS.lineTo(l2.x,l2.y); gS.lineTo(l1.x,l1.y); gS.closePath(); gS.fill(); gS.strokeStyle='#333'; gS.stroke();
@@ -316,14 +395,23 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     var cx=OW/2, cy=OH*0.9, scale=9*0.5;
     gO.fillStyle='#6b7280'; gO.fillRect(cx-8,cy-6,16,12);
     gO.strokeStyle='#e2e8f0'; gO.lineWidth=1;
-    for(var ydLine=16; ydLine<=27; ydLine++){ var r=ydLine*yd*scale; gO.beginPath(); gO.arc(cx,cy,r,Math.PI,Math.PI*2); gO.stroke(); if(ydLine%2===0){ gO.fillStyle='#334155'; gO.font='10px system-ui'; gO.textAlign='left'; gO.fillText(ydLine+' yd', cx+4, cy-r-2); } }
+    for(var ydLine=16; ydLine<=27; ydLine++){
+      var r=ydLine*yd*scale; gO.beginPath(); gO.arc(cx,cy,r,Math.PI,Math.PI*2); gO.stroke();
+      if(ydLine%2===0){ gO.fillStyle='#334155'; gO.font='10px system-ui'; gO.textAlign='left'; gO.fillText(ydLine+' yd', cx+4, cy-r-2); }
+    }
     var r27=27*yd*scale, left=Math.tan(-17*Math.PI/180)*(-r27), right=Math.tan(17*Math.PI/180)*(-r27);
     gO.beginPath(); gO.moveTo(cx,cy); gO.lineTo(cx+left,cy-r27); gO.moveTo(cx,cy); gO.lineTo(cx+right,cy-r27); gO.strokeStyle='#cbd5e1'; gO.stroke();
-    for(var i=0;i<sim.shooters.length;i++){ var s=sim.shooters[i], yard=(sim.mode==='ATA_HANDICAP')?s.yardage:16, r2=yard*yd*scale, xOffset=POSTS_X[(s.post-1)]*scale, px=cx+xOffset, py=cy-r2; gO.fillStyle=COLORS[i%COLORS.length]; gO.beginPath(); gO.arc(px,py,7,0,Math.PI*2); gO.fill(); gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(i+1),px,py); if(i===sim.activeIdx){ gO.strokeStyle=COLORS[i%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(px,py,11,0,Math.PI*2); gO.stroke(); } }
+
+    for(var i=0;i<sim.shooters.length;i++){
+      var s=sim.shooters[i], yard=(sim.mode==='ATA_HANDICAP')?s.yardage:16, r2=yard*yd*scale, xOffset=POSTS_X[(s.post-1)]*scale, px=cx+xOffset, py=cy-r2;
+      gO.fillStyle=COLORS[i%COLORS.length]; gO.beginPath(); gO.arc(px,py,7,0,Math.PI*2); gO.fill();
+      gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(i+1),px,py);
+      if(i===sim.activeIdx){ gO.strokeStyle=COLORS[i%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(px,py,11,0,Math.PI*2); gO.stroke(); }
+    }
   }
 
   // initial debug
-  dbg('ready'); log('Loaded v1.1.1a');
+  applyPauseUI(); dbg('ready'); log('Loaded v1.1.1b');
 })();
 </script>
 </body></html>
