@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>ClaySim — Unified Launcher v1.1.0</title>
+<title>ClaySim — Unified Launcher v1.1.1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
   :root { --sky:#cfe8ff; --ground:#bde5b4; --ink:#0f172a; --line:#e5e7eb; --ok:#16a34a; --bad:#ef4444; --accent:#4f46e5; --panel:#ffffff; --muted:#475569; }
@@ -145,7 +145,7 @@
   // ===== Logging =====
   var logEl = document.getElementById('log');
   var dbgEl = document.getElementById('dbg');
-  function log(m){ var t=new Date().toLocaleTimeString(); logEl.textContent += "["+t+"] "+m+"\\n"; logEl.scrollTop = logEl.scrollHeight; }
+  function log(m){ var t=new Date().toLocaleTimeString(); logEl.textContent += "["+t+"] "+m+"\n"; logEl.scrollTop = logEl.scrollHeight; }
   function dbg(m){ dbgEl.textContent = m; }
 
   // ===== Controls & Setup =====
@@ -232,17 +232,17 @@
   };
 
   function playerCard(i, withYardage){
-    var ydField = withYardage ? '<div class=\"formRow\"><label>Yardage</label><select id=\"p'+i+'ydg\">'+['16','18','19','20','21','22','23','24','25','26','27'].map(function(v){return '<option '+(v==='16'?'selected':'')+'>'+v+'</option>';}).join('')+'</select></div>' : '';
-    return '<div class=\"playerCard\">'
-      + '<div class=\"formRow\"><label>Name</label><input id=\"p'+i+'name\" value=\"Player '+i+'\"></div>'
+    var ydField = withYardage ? '<div class="formRow"><label>Yardage</label><select id="p'+i+'ydg">'+['18','19','20','21','22','23','24','25','26','27'].map(function(v){return '<option '+(v==='18'?'selected':'')+'>'+v+'</option>';}).join('')+'</select></div>' : '';
+    return '<div class="playerCard">'
+      + '<div class="formRow"><label>Name</label><input id="p'+i+'name" value="Player '+i+'"></div>'
       + ydField
-      + '<div class=\"formRow\"><label>Top Choke</label><select id=\"p'+i+'top\"><option>Full</option><option selected>Modified</option><option>Improved Cylinder</option><option>Cylinder</option></select></div>'
-      + '<div class=\"formRow\"><label>Bottom Choke</label><select id=\"p'+i+'bot\"><option>Full</option><option>Modified</option><option selected>Improved Cylinder</option><option>Cylinder</option></select></div>'
+      + '<div class="formRow"><label>Top Choke</label><select id="p'+i+'top"><option>Full</option><option selected>Modified</option><option>Improved Cylinder</option><option>Cylinder</option></select></div>'
+      + '<div class="formRow"><label>Bottom Choke</label><select id="p'+i+'bot"><option>Full</option><option>Modified</option><option selected>Improved Cylinder</option><option>Cylinder</option></select></div>'
       + '</div>';
   }
   function buildPlayersUI(){
     var n=parseInt(numShootersSel.value,10);
-    var withY = (modeSel.value!=='ATA_DOUBLES');
+    var withY = (modeSel.value==='ATA_HANDICAP'); // yardage only in handicap
     var html=''; for(var i=1;i<=n;i++){ html+=playerCard(i, withY); }
     playersDiv.innerHTML=html;
   }
@@ -274,10 +274,10 @@
     sim.mode = modeSel.value;
     sim.shooters=[];
     for(var i=1;i<=n;i++){
-      var y = (sim.mode!=='ATA_DOUBLES') ? parseInt(document.getElementById('p'+i+'ydg').value||'16',10) : 16;
+      var y = (sim.mode==='ATA_HANDICAP') ? parseInt(document.getElementById('p'+i+'ydg').value||'18',10) : 16;
       sim.shooters.push({
         name:(document.getElementById('p'+i+'name').value||('Player '+i)),
-        yardage: Math.max(16, Math.min(27,y)),
+        yardage: (sim.mode==='ATA_HANDICAP') ? Math.max(18, Math.min(27,y)) : 16,
         top:document.getElementById('p'+i+'top').value, bot:document.getElementById('p'+i+'bot').value,
         nextBarrel:'Top', post:i, col:1, shotsAtPost:0, pairsAtPost:0, lastMark:null, topMark:null, botMark:null
       });
@@ -367,7 +367,8 @@
     var s=sim.shooters[sim.activeIdx];
     hudShooter.textContent = s.name;
     hudPost.textContent = 'Post '+s.post;
-    hudYdg.textContent = (sim.mode==='ATA_HANDICAP' || sim.mode==='ATA_SINGLES') ? (s.yardage+' yd') : '';
+    var ydg = (sim.mode==='ATA_HANDICAP') ? (s.yardage+' yd') : '16 yd';
+    hudYdg.textContent = ydg;
     hudShells.textContent = 'Shells: '+sim.shells+'/2';
   }
 
@@ -377,7 +378,8 @@
     var s=sim.shooters[sim.activeIdx];
     var postIndex = (s.post-1);
     camX = POSTS_X[postIndex];
-    camY = - ( (sim.mode==='ATA_HANDICAP' || sim.mode==='ATA_SINGLES') ? s.yardage : 16 ) * yd;
+    var yUsed = (sim.mode==='ATA_HANDICAP') ? s.yardage : 16;
+    camY = - yUsed * yd;
     camZ = 1.5;
   }
 
@@ -473,6 +475,7 @@
     var s=sim.shooters[sim.activeIdx];
     var using=s.nextBarrel; s.nextBarrel=(using==='Top')?'Bottom':'Top';
     var chokeName=(using==='Top')?s.top:s.bot;
+    var wasFirstShot = (sim.shells===2);
     sim.shells--; syncHUD();
     // pellets visual
     var pelletsCount=180, spreadPx=8;
@@ -492,19 +495,28 @@
       var Rpx=chokeRadiusAtDistancePx(chokeName, Math.max(1.0, distY));
       if(dpx <= Rpx && dpx<bestD){ bestD=dpx; targetIdx=j; }
     }
+    var hit=false;
     if(targetIdx>=0){
       sim.clays[targetIdx].broken=true;
+      hit=true;
       if(sim.mode==='ATA_DOUBLES'){
         if(using==='Top'){ s.topMark='X'; } else { s.botMark='/'; }
       }else{
-        s.lastMark = ( (2 - sim.shells) === 1) ? 'X' : '/';
+        s.lastMark = wasFirstShot ? 'X' : '/';
       }
     }
     if(sim.mode==='ATA_DOUBLES'){
       var alive=0; for(var k=0;k<sim.clays.length;k++){ if(!sim.clays[k].broken) alive++; }
       if(sim.shells===0 || alive===0){ endPair(); }
     }else{
-      if(sim.shells===0){ if(!s.lastMark) s.lastMark='0'; endTarget(); }
+      if(hit && wasFirstShot){
+        // Auto-advance after short delay; ignore second shell
+        sim.shells=0;
+        setTimeout(endTarget, 180);
+      }else if(sim.shells===0){
+        if(!s.lastMark) s.lastMark='0';
+        endTarget();
+      }
     }
   }
 
@@ -513,78 +525,4 @@
     // draw background grid
     gS.clearRect(0,0,cS.width,cS.height);
     gS.strokeStyle='rgba(0,0,0,0.08)';
-    for(var gy=2; gy<=60; gy+=2){ var a=project(-25*yd, gy*yd, 0), b=project(25*yd, gy*yd, 0); gS.beginPath(); gS.moveTo(a.x,a.y); gS.lineTo(b.x,b.y); gS.stroke(); }
-    for(var gx=-25; gx<=25; gx+=2){ var a2=project(gx*yd, 2*yd, 0), b2=project(gx*yd, 60*yd, 0); gS.beginPath(); gS.moveTo(a2.x,a2.y); gS.lineTo(b2.x,b2.y); gS.stroke(); }
-    // trap house
-    var f1=project(-2,0,0.2), f2=project(2,0,0.2), l1=project(-2.5,-0.5,0.6), l2=project(2.5,-0.5,0.6);
-    gS.fillStyle='#555'; gS.beginPath(); gS.moveTo(f1.x,f1.y); gS.lineTo(f2.x,f2.y); gS.lineTo(l2.x,l2.y); gS.lineTo(l1.x,l1.y); gS.closePath(); gS.fill(); gS.strokeStyle='#333'; gS.stroke();
-
-    // pellets
-    gS.fillStyle='#111';
-    for(var pi=sim.pellets.length-1; pi>=0; pi--){
-      var p=sim.pellets[pi];
-      gS.beginPath(); gS.arc(p.x,p.y,1.2,0,Math.PI*2); gS.fill();
-      p.life-=1/60; if(p.life<=0){ sim.pellets.splice(pi,1); }
-    }
-
-    // clays
-    if(!paused){
-      for(var ci=0; ci<sim.clays.length; ci++){
-        var c=sim.clays[ci]; if(c.broken) continue;
-        var pr=project(c.x,c.y,c.z);
-        gS.fillStyle='#111'; gS.beginPath(); gS.arc(pr.x,pr.y,6,0,Math.PI*2); gS.fill();
-        c.x += c.vx*(1/60); c.y += c.vy*(1/60); c.z += c.vz*(1/60) - 0.5*g*(1/60)*(1/60); c.vz -= g*(1/60);
-        if(c.z<=0 || c.y>55*yd || Math.abs(c.x)>27*yd){
-          c.broken=true;
-          if(sim.mode!=='ATA_DOUBLES'){
-            var s=sim.shooters[sim.activeIdx];
-            if(s && s.lastMark==null){ s.lastMark='0'; }
-            endTarget();
-          }
-        }
-      }
-    }else{
-      // draw clays but don't move them
-      for(var ci2=0; ci2<sim.clays.length; ci2++){
-        var c2=sim.clays[ci2]; if(c2.broken) continue;
-        var pr2=project(c2.x,c2.y,c2.z);
-        gS.fillStyle='#111'; gS.beginPath(); gS.arc(pr2.x,pr2.y,6,0,Math.PI*2); gS.fill();
-      }
-    }
-
-    requestAnimationFrame(renderShooter);
-  }
-  requestAnimationFrame(renderShooter);
-
-  // ===== Overhead =====
-  function drawOverhead(){
-    gO.clearRect(0,0,OW,OH);
-    var cx=OW/2, cy=OH*0.9, scale=9*0.5;
-    // trap house
-    gO.fillStyle='#6b7280'; gO.fillRect(cx-8, cy-6, 16, 12);
-    // yard arcs
-    gO.strokeStyle='#e2e8f0'; gO.lineWidth=1;
-    for(var ydLine=16; ydLine<=27; ydLine++){
-      var r=ydLine*yd*scale;
-      gO.beginPath(); gO.arc(cx, cy, r, Math.PI, Math.PI*2); gO.stroke();
-      if(ydLine%2===0){ gO.fillStyle='#334155'; gO.font='10px system-ui'; gO.textAlign='left'; gO.fillText(ydLine+' yd', cx+4, cy - r - 2); }
-    }
-    // legal ATA angles
-    var r27=27*yd*scale;
-    var left=Math.tan(-17*Math.PI/180)*(-r27), right=Math.tan(17*Math.PI/180)*(-r27);
-    gO.beginPath(); gO.moveTo(cx,cy); gO.lineTo(cx+left, cy-r27); gO.moveTo(cx,cy); gO.lineTo(cx+right, cy-r27); gO.strokeStyle='#cbd5e1'; gO.stroke();
-    // shooters
-    for(var i=0;i<sim.shooters.length;i++){
-      var s=sim.shooters[i];
-      var r2=((sim.mode==='ATA_HANDICAP'||sim.mode==='ATA_SINGLES')?s.yardage:16)*yd*scale;
-      var xOffset=POSTS_X[(s.post-1)]*scale;
-      var px=cx + xOffset, py=cy - r2;
-      gO.fillStyle=COLORS[i%COLORS.length]; gO.beginPath(); gO.arc(px,py,7,0,Math.PI*2); gO.fill();
-      gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(i+1), px, py);
-      if(i===sim.activeIdx){ gO.strokeStyle=COLORS[i%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(px,py,11,0,Math.PI*2); gO.stroke(); }
-    }
-  }
-
-})();</script>
-</body>
-</html>
+    for(var gy=2; gy<=60; gy+=2){ var a=project
