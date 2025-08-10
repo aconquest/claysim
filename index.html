@@ -1,4 +1,6 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ClaySim — Unified Launcher v1.1.1b</title><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>ClaySim — Unified Launcher v1.2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
 :root{--sky:#cfe8ff;--ground:#bde5b4;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--accent:#4f46e5}
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e5e7eb}
@@ -43,7 +45,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
       <div class="formRow"><label>Variant (Trap)</label>
         <div class="pillrow">
           <button id="vATA" class="active">ATA</button>
-          <button id="vBunker" class="disabled">Olympic/Bunker (soon)</button>
+          <button id="vBunker" class="disabled">Olympic/Bunker (now)</button>
         </div>
       </div>
       <div class="formRow" id="rowModes"><label>Game Mode</label>
@@ -51,6 +53,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
           <option value="ATA_SINGLES">Singles (16 yd)</option>
           <option value="ATA_HANDICAP">Handicap (18–27 yd)</option>
           <option value="ATA_DOUBLES">Doubles</option>
+          <option value="OLYMPIC_TRAP">Olympic/Bunker Trap (Qual)</option>
         </select>
       </div>
       <div class="formRow"><label>Number of Shooters</label>
@@ -170,7 +173,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   var camX=0, camY=-16*yd, camZ=1.5;
   function project(X,Y,Z){var Xc=X-camX,Yc=Y-camY,Zc=Z-camZ,d=Math.max(0.1,Yc);return {x:(SCX+f*(Xc/d)),y:(SCY-f*(Zc/d)),d:d};}
 
-  // choke model
+  // choke model (R40 @ 40 yd)
   var CHOKE_R40_IN={'Full':10,'Modified':12.5,'Improved Cylinder':15,'Cylinder':17.5};
   function chokeRadiusAtDistancePx(chokeName,distY_m){
     var R40=CHOKE_R40_IN[chokeName]||12.5, distY_yd=Math.max(1e-3,distY_m/yd);
@@ -182,7 +185,13 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   hr.oninput=function(){hrVal.textContent=parseFloat(hr.value).toFixed(2)+'×'};
 
   // sim state
-  var sim={mode:'ATA_SINGLES',shooters:[],activeIdx:0,shells:0,shotLock:false,running:true,throwing:false,clays:[],pellets:[]};
+  var sim={
+    mode:'ATA_SINGLES',
+    shooters:[], activeIdx:0,
+    shells:0, shotLock:false, running:true, throwing:false,
+    clays:[], pellets:[],
+    bunkerSeq:null
+  };
 
   // players UI
   function playerCard(i,withY){
@@ -194,25 +203,56 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
       +'<div class="formRow"><label>Bottom Choke</label><select id="p'+i+'bot"><option>Full</option><option>Modified</option><option selected>Improved Cylinder</option><option>Cylinder</option></select></div>'
       +'</div>';
   }
-  function buildPlayersUI(){var n=parseInt(numShootersSel.value,10), withY=(modeSel.value==='ATA_HANDICAP'); var html=''; for(var i=1;i<=n;i++) html+=playerCard(i,withY); playersDiv.innerHTML=html;}
-  numShootersSel.onchange=buildPlayersUI; modeSel.onchange=function(){buildPlayersUI();updateHeaders();}; buildPlayersUI();
+  function buildPlayersUI(){
+    var n=parseInt(numShootersSel.value,10);
+    var withY=(modeSel.value==='ATA_HANDICAP'); // only handicap shows yardage
+    var html=''; for(var i=1;i<=n;i++) html+=playerCard(i,withY);
+    playersDiv.innerHTML=html;
+  }
+  numShootersSel.onchange=buildPlayersUI;
+  modeSel.onchange=function(){ buildPlayersUI(); updateHeaders(); };
+  buildPlayersUI();
 
   // headers per mode
   function updateHeaders(){
-    if(modeSel.value==='ATA_DOUBLES'){sheetTitle.textContent='ATA Doubles — Score Sheet (25 pairs)'; sheetLegend.textContent='Top = 1st shot • Bottom = 2nd shot • X/ = dead • 0 = lost'; hudMode.textContent='ATA Doubles';}
-    else if(modeSel.value==='ATA_HANDICAP'){sheetTitle.textContent='ATA Handicap — Score Sheet (25 targets)'; sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost'; hudMode.textContent='ATA Handicap';}
-    else{sheetTitle.textContent='ATA Singles — Score Sheet (25 targets)'; sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost'; hudMode.textContent='ATA Singles';}
+    if(modeSel.value==='ATA_DOUBLES'){
+      sheetTitle.textContent='ATA Doubles — Score Sheet (25 pairs)';
+      sheetLegend.textContent='Top = 1st shot • Bottom = 2nd shot • X/ = dead • 0 = lost';
+      hudMode.textContent='ATA Doubles';
+    }else if(modeSel.value==='ATA_HANDICAP'){
+      sheetTitle.textContent='ATA Handicap — Score Sheet (25 targets)';
+      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
+      hudMode.textContent='ATA Handicap';
+    }else if(modeSel.value==='OLYMPIC_TRAP'){
+      sheetTitle.textContent='Olympic Trap (Qualification) — Score Sheet (25 targets)';
+      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
+      hudMode.textContent='Olympic Trap';
+    }else{
+      sheetTitle.textContent='ATA Singles — Score Sheet (25 targets)';
+      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
+      hudMode.textContent='ATA Singles';
+    }
   }
   updateHeaders();
 
-  // build round
+  // build round (Start / Apply)
   btnStart.onclick=function(){
     var n=parseInt(numShootersSel.value,10); sim.mode=modeSel.value; sim.shooters=[];
     for(var i=1;i<=n;i++){
       var y=(sim.mode==='ATA_HANDICAP')?parseInt(document.getElementById('p'+i+'ydg').value||'18',10):16;
-      sim.shooters.push({name:(document.getElementById('p'+i+'name').value||('Player '+i)), yardage:(sim.mode==='ATA_HANDICAP')?Math.max(18,Math.min(27,y)):16, top:document.getElementById('p'+i+'top').value, bot:document.getElementById('p'+i+'bot').value, nextBarrel:'Top', post:i, col:1, shotsAtPost:0, pairsAtPost:0, lastMark:null, topMark:null, botMark:null});
+      sim.shooters.push({
+        name:(document.getElementById('p'+i+'name').value||('Player '+i)),
+        yardage:(sim.mode==='ATA_HANDICAP')?Math.max(18,Math.min(27,y)):16,
+        top:document.getElementById('p'+i+'top').value,
+        bot:document.getElementById('p'+i+'bot').value,
+        nextBarrel:'Top', post:i, col:1, shotsAtPost:0, pairsAtPost:0,
+        lastMark:null, topMark:null, botMark:null
+      });
     }
-    sim.activeIdx=0; sim.shells=0; sim.shotLock=false; sim.running=true; sim.throwing=false; sim.clays.length=0; sim.pellets.length=0;
+    sim.activeIdx=0; sim.shells=0; sim.shotLock=false; sim.running=true; sim.throwing=false;
+    sim.clays.length=0; sim.pellets.length=0;
+    sim.bunkerSeq = (sim.mode==='OLYMPIC_TRAP') ? makeBunkerRoundPattern() : null;
+
     buildScoreTable(sim.shooters.length); fillScoreNames(); drawOverhead(); setCameraToActiveShooter(); syncHUD(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
     hudStatus.textContent='Running'; applyPauseUI(); log('Applied: '+sim.mode+' for '+n+' shooter(s)');
   };
@@ -220,13 +260,29 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   // score table
   function buildScoreTable(n){
     if(sim.mode==='ATA_DOUBLES'){
-      var thead='<tr class="groupLabel"><th class="name">Name</th>'; for(var i=1;i<=25;i++) thead+='<th class="'+((i%5===0)?'grp':'')+'">'+i+'</th>'; thead+='<th class="total">Total/50</th></tr>';
-      var rows=''; for(var r=0;r<n;r++){ rows+='<tr data-row="'+r+'"><td class="name"><b class="nm"></b></td>'; for(var c=1;c<=25;c++) rows+='<td data-col="'+c+'" class="'+((c%5===0)?'grp':'')+'"><div class="cellDbl"><div class="cellTop"></div><div class="cellBot"></div></div></td>'; rows+='<td class="total">0</td></tr>'; }
+      var thead='<tr class="groupLabel"><th class="name">Name</th>';
+      for(var i=1;i<=25;i++) thead+='<th class="'+((i%5===0)?'grp':'')+'">'+i+'</th>';
+      thead+='<th class="total">Total/50</th></tr>';
+      var rows='';
+      for(var r=0;r<n;r++){
+        rows+='<tr data-row="'+r+'"><td class="name"><b class="nm"></b></td>';
+        for(var c=1;c<=25;c++) rows+='<td data-col="'+c+'" class="'+((c%5===0)?'grp':'')+'"><div class="cellDbl"><div class="cellTop"></div><div class="cellBot"></div></div></td>';
+        rows+='<td class="total">0</td></tr>';
+      }
       table.innerHTML=thead+rows;
     }else{
-      var thead2='<tr class="groupLabel"><th class="name">Class & Name</th>'; for(var p=1;p<=5;p++){ for(var i2=1;i2<=5;i2++){ var idx=(p-1)*5+i2; thead2+='<th class="'+((idx%5===0)?'grp':'')+'">'+idx+'</th>'; } } thead2+='<th class="total">Total</th></tr>';
-      thead2+='<tr class="groupLabel"><th class="name">Post</th>'; for(var p2=1;p2<=5;p2++){ for(var j=1;j<=5;j++){ thead2+='<th class="'+((j===5)?'grp':'')+'">'+(j===3?('P'+p2):'')+'</th>'; } } thead2+='<th class="total"></th></tr>';
-      var rows2=''; for(var r2=0;r2<n;r2++){ rows2+='<tr data-row="'+r2+'"><td class="name"><span class="cls"></span> <b class="nm"></b></td>'; for(var c2=1;c2<=25;c2++) rows2+='<td data-col="'+c2+'" class="'+((c2%5===0)?'grp':'')+'"></td>'; rows2+='<td class="total">0</td></tr>'; }
+      var thead2='<tr class="groupLabel"><th class="name">Class & Name</th>';
+      for(var p=1;p<=5;p++){ for(var i2=1;i2<=5;i2++){ var idx=(p-1)*5+i2; thead2+='<th class="'+((idx%5===0)?'grp':'')+'">'+idx+'</th>'; } }
+      thead2+='<th class="total">Total</th></tr>';
+      thead2+='<tr class="groupLabel"><th class="name">Post</th>';
+      for(var p2=1;p2<=5;p2++){ for(var j=1;j<=5;j++){ thead2+='<th class="'+((j===5)?'grp':'')+'">'+(j===3?('P'+p2):'')+'</th>'; } }
+      thead2+='<th class="total"></th></tr>';
+      var rows2='';
+      for(var r2=0;r2<n;r2++){
+        rows2+='<tr data-row="'+r2+'"><td class="name"><span class="cls"></span> <b class="nm"></b></td>';
+        for(var c2=1;c2<=25;c2++) rows2+='<td data-col="'+c2+'" class="'+((c2%5===0)?'grp':'')+'"></td>';
+        rows2+='<td class="total">0</td></tr>';
+      }
       table.innerHTML=thead2+rows2;
     }
   }
@@ -248,6 +304,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     if(sim.shooters.length===0) return;
     sim.shooters.forEach(function(s,i){ s.col=1;s.post=i+1;s.shotsAtPost=0;s.pairsAtPost=0;s.nextBarrel='Top';s.lastMark=null;s.topMark=null;s.botMark=null; });
     sim.activeIdx=0;sim.shells=0;sim.shotLock=false;sim.throwing=false;sim.clays.length=0;sim.pellets.length=0;sim.running=true;
+    sim.bunkerSeq = (sim.mode==='OLYMPIC_TRAP') ? makeBunkerRoundPattern() : null;
     buildScoreTable(sim.shooters.length);fillScoreNames();drawOverhead();setCameraToActiveShooter();syncHUD();highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
     hudStatus.textContent='Running'; applyPauseUI(); log('Round reset');
   }
@@ -255,7 +312,9 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   function syncHUD(){
     if(sim.shooters.length===0){hudShooter.textContent='P1';hudPost.textContent='Post 1';hudYdg.textContent='16 yd';hudShells.textContent='Shells: 0/2';return;}
     var s=sim.shooters[sim.activeIdx];
-    hudShooter.textContent=s.name; hudPost.textContent='Post '+s.post; hudYdg.textContent=(sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):'16 yd';
+    hudShooter.textContent=s.name;
+    hudPost.textContent='Post '+s.post;
+    hudYdg.textContent=(sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):(sim.mode==='OLYMPIC_TRAP'?'Bunker':'16 yd');
     hudShells.textContent='Shells: '+sim.shells+'/2';
   }
 
@@ -263,10 +322,22 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     if(sim.shooters.length===0) return;
     var s=sim.shooters[sim.activeIdx], postIndex=(s.post-1);
     camX=POSTS_X[postIndex];
+    // For bunker we stay around 16 yd equivalent; camera is just for perspective drawing here
     var yUsed=(sim.mode==='ATA_HANDICAP')?s.yardage:16; camY= - yUsed*yd; camZ=1.5;
   }
 
-  // throwing
+  // --- Olympic (Bunker) sequence: each station block of 5 = 2L,2R,1C randomized
+  function makeBunkerRoundPattern(){
+    var seq=[];
+    for(var st=0; st<5; st++){
+      var block=['L','L','R','R','C'];
+      for(var i=block.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=block[i]; block[i]=block[j]; block[j]=t; }
+      seq=seq.concat(block);
+    }
+    return seq; // length 25 of 'L'/'R'/'C'
+  }
+
+  // throwing: ATA
   function throwAtaSingle(){
     var az=(Math.random()*34-17)*Math.PI/180, y10=9.144, h10=2.44+Math.random()*(3.05-2.44), v=31+(Math.random()-0.5)*2, bestTh=0.2,bestErr=1e-9;
     for(var deg=6;deg<=24;deg+=0.1){ var th=deg*Math.PI/180, vy=v*Math.cos(th)*Math.cos(az), t10=y10/Math.max(0.1,vy), z10=0.5+v*Math.sin(th)*t10-0.5*g*t10*t10, err=Math.abs(z10-h10); if(err<bestErr){bestErr=err;bestTh=th;} }
@@ -281,6 +352,41 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     var azL=(-10-Math.random()*7)*Math.PI/180, azR=(10+Math.random()*7)*Math.PI/180; sim.clays.push(one(azL)); sim.clays.push(one(azR));
   }
 
+  // throwing: Olympic/Bunker (single)
+  function throwBunkerSingle(){
+    var idx = sim.shooters[sim.activeIdx].col; // 1..25 within the round
+    var dir = sim.bunkerSeq ? sim.bunkerSeq[idx-1] : ['L','R','C'][Math.floor(Math.random()*3)];
+
+    // ISSF-ish ranges: ±15..45° azimuth, height 1.5–3.0 m @10m, ~38–41 m/s speed, 76 m range.
+    var az;
+    if(dir==='L'){ az = -(15 + Math.random()*30) * Math.PI/180; }     // -15° .. -45°
+    else if(dir==='R'){ az =  (15 + Math.random()*30) * Math.PI/180; } // +15° .. +45°
+    else { az = (Math.random()*6 - 3) * Math.PI/180; }                 // near center
+
+    var y10 = 10.0;                     // meters downrange for height spec
+    var h10 = 1.5 + Math.random()*1.5;  // 1.5 .. 3.0 m height at 10 m
+    var v   = 38.5 + (Math.random()*3.0); // ~38–41 m/s
+
+    var bestTh=0.2, bestErr=1e9;
+    for(var deg=6; deg<=24; deg+=0.1){
+      var th=deg*Math.PI/180;
+      var vy=v*Math.cos(th)*Math.cos(az);
+      var t10=y10/Math.max(0.1,vy);
+      var z10=0.5 + v*Math.sin(th)*t10 - 0.5*g*t10*t10;
+      var err=Math.abs(z10 - h10);
+      if(err<bestErr){ bestErr=err; bestTh=th; }
+    }
+    var thFinal=bestTh;
+
+    sim.clays.push({
+      x:0,y:0,z:0.5,
+      vx:(v*Math.cos(thFinal)*Math.sin(az)),
+      vy:(v*Math.cos(thFinal)*Math.cos(az)),
+      vz:(v*Math.sin(thFinal)),
+      broken:false, owner:sim.activeIdx, col:sim.shooters[sim.activeIdx].col
+    });
+  }
+
   function loadGun(){ sim.shells=2; sim.shotLock=false; sim.shooters[sim.activeIdx].nextBarrel='Top'; syncHUD(); }
 
   function handlePull(){
@@ -289,7 +395,9 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
       var s=sim.shooters[sim.activeIdx]; s.topMark=null; s.botMark=null;
       loadGun(); sim.throwing=true; throwAtaPair(); log('Pair thrown.');
     }else{
-      loadGun(); sim.throwing=true; throwAtaSingle(); log('Target thrown.');
+      loadGun(); sim.throwing=true;
+      if(sim.mode==='OLYMPIC_TRAP'){ throwBunkerSingle(); log('Bunker target thrown.'); }
+      else { throwAtaSingle(); log('ATA target thrown.'); }
     }
   }
 
@@ -331,7 +439,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     var s=sim.shooters[sim.activeIdx], using=s.nextBarrel; s.nextBarrel=(using==='Top')?'Bottom':'Top';
     var chokeName=(using==='Top')?s.top:s.bot, wasFirstShot=(sim.shells===2); sim.shells--; syncHUD();
 
-    // pellets visual
+    // pellets visual (simple gaussian spread)
     var pelletsCount=180, spreadPx=8;
     for(var i=0;i<pelletsCount;i++){ var u=Math.random()+1e-6,v=Math.random()+1e-6,mag=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v),r=Math.abs(mag)*spreadPx,t=Math.random()*Math.PI*2; sim.pellets.push({x:(pos.mx+r*Math.cos(t)),y:(pos.my+r*Math.sin(t)),life:(0.14+Math.random()*0.12)}); }
 
@@ -359,16 +467,22 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     }
   }
 
-  // render
+  // render (perspective)
   function renderShooter(){
     gS.clearRect(0,0,cS.width,cS.height);
     gS.strokeStyle='rgba(0,0,0,0.08)';
     for(var gy=2;gy<=60;gy+=2){ var a=project(-25*yd,gy*yd,0),b=project(25*yd,gy*yd,0); gS.beginPath(); gS.moveTo(a.x,a.y); gS.lineTo(b.x,b.y); gS.stroke(); }
     for(var gx=-25;gx<=25;gx+=2){ var a2=project(gx*yd,2*yd,0),b2=project(gx*yd,60*yd,0); gS.beginPath(); gS.moveTo(a2.x,a2.y); gS.lineTo(b2.x,b2.y); gS.stroke(); }
 
-    // trap house
-    var f1=project(-2,0,0.2), f2=project(2,0,0.2), l1=project(-2.5,-0.5,0.6), l2=project(2.5,-0.5,0.6);
-    gS.fillStyle='#555'; gS.beginPath(); gS.moveTo(f1.x,f1.y); gS.lineTo(f2.x,f2.y); gS.lineTo(l2.x,l2.y); gS.lineTo(l1.x,l1.y); gS.closePath(); gS.fill(); gS.strokeStyle='#333'; gS.stroke();
+    // trap house (ATA) / trench (bunker) visual hint
+    if(sim.mode==='OLYMPIC_TRAP'){
+      // trench slab
+      var tL=project(-15,0,-0.1), tR=project(15,0,-0.1), tL2=project(-16,-0.5,0.3), tR2=project(16,-0.5,0.3);
+      gS.fillStyle='#4b5563'; gS.beginPath(); gS.moveTo(tL.x,tL.y); gS.lineTo(tR.x,tR.y); gS.lineTo(tR2.x,tR2.y); gS.lineTo(tL2.x,tL2.y); gS.closePath(); gS.fill(); gS.strokeStyle='#1f2937'; gS.stroke();
+    }else{
+      var f1=project(-2,0,0.2), f2=project(2,0,0.2), l1=project(-2.5,-0.5,0.6), l2=project(2.5,-0.5,0.6);
+      gS.fillStyle='#555'; gS.beginPath(); gS.moveTo(f1.x,f1.y); gS.lineTo(f2.x,f2.y); gS.lineTo(l2.x,l2.y); gS.lineTo(l1.x,l1.y); gS.closePath(); gS.fill(); gS.strokeStyle='#333'; gS.stroke();
+    }
 
     // pellets
     gS.fillStyle='#111';
@@ -380,7 +494,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
         var c=sim.clays[ci]; if(c.broken) continue;
         var pr=project(c.x,c.y,c.z); gS.fillStyle='#111'; gS.beginPath(); gS.arc(pr.x,pr.y,6,0,Math.PI*2); gS.fill();
         c.x+=c.vx*(1/60); c.y+=c.vy*(1/60); c.z+=c.vz*(1/60)-0.5*g*(1/60)*(1/60); c.vz-=g*(1/60);
-        if(c.z<=0 || c.y>55*yd || Math.abs(c.x)>27*yd){ c.broken=true; if(sim.mode!=='ATA_DOUBLES'){ var s=sim.shooters[sim.activeIdx]; if(s&&s.lastMark==null) s.lastMark='0'; endTarget(); } }
+        if(c.z<=0 || c.y>80 || Math.abs(c.x)>35){ c.broken=true; if(sim.mode!=='ATA_DOUBLES'){ var s=sim.shooters[sim.activeIdx]; if(s&&s.lastMark==null) s.lastMark='0'; endTarget(); } }
       }
     }else{
       for(var ci2=0;ci2<sim.clays.length;ci2++){ var c2=sim.clays[ci2]; if(c2.broken) continue; var pr2=project(c2.x,c2.y,c2.z); gS.fillStyle='#111'; gS.beginPath(); gS.arc(pr2.x,pr2.y,6,0,Math.PI*2); gS.fill(); }
@@ -389,29 +503,39 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   }
   requestAnimationFrame(renderShooter);
 
-  // overhead
+  // overhead (ATA rings or Bunker trench)
   function drawOverhead(){
     gO.clearRect(0,0,OW,OH);
-    var cx=OW/2, cy=OH*0.9, scale=9*0.5;
-    gO.fillStyle='#6b7280'; gO.fillRect(cx-8,cy-6,16,12);
-    gO.strokeStyle='#e2e8f0'; gO.lineWidth=1;
-    for(var ydLine=16; ydLine<=27; ydLine++){
-      var r=ydLine*yd*scale; gO.beginPath(); gO.arc(cx,cy,r,Math.PI,Math.PI*2); gO.stroke();
-      if(ydLine%2===0){ gO.fillStyle='#334155'; gO.font='10px system-ui'; gO.textAlign='left'; gO.fillText(ydLine+' yd', cx+4, cy-r-2); }
-    }
-    var r27=27*yd*scale, left=Math.tan(-17*Math.PI/180)*(-r27), right=Math.tan(17*Math.PI/180)*(-r27);
-    gO.beginPath(); gO.moveTo(cx,cy); gO.lineTo(cx+left,cy-r27); gO.moveTo(cx,cy); gO.lineTo(cx+right,cy-r27); gO.strokeStyle='#cbd5e1'; gO.stroke();
-
-    for(var i=0;i<sim.shooters.length;i++){
-      var s=sim.shooters[i], yard=(sim.mode==='ATA_HANDICAP')?s.yardage:16, r2=yard*yd*scale, xOffset=POSTS_X[(s.post-1)]*scale, px=cx+xOffset, py=cy-r2;
-      gO.fillStyle=COLORS[i%COLORS.length]; gO.beginPath(); gO.arc(px,py,7,0,Math.PI*2); gO.fill();
-      gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(i+1),px,py);
-      if(i===sim.activeIdx){ gO.strokeStyle=COLORS[i%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(px,py,11,0,Math.PI*2); gO.stroke(); }
+    if(sim.mode==='OLYMPIC_TRAP'){
+      var cx=OW/2, cy=OH*0.88;
+      var trenchW=240, trenchH=10;
+      gO.fillStyle='#475569'; gO.fillRect(cx-trenchW/2, cy-4, trenchW, trenchH);
+      gO.fillStyle='#94a3b8';
+      for(var i=0;i<15;i++){ var x = cx - trenchW/2 + (i+0.5)*(trenchW/15); gO.fillRect(x-2, cy-6, 4, 12); }
+      var arcR=110; var posts=[-2,-1,0,1,2].map(function(k){ return {x: cx + k*(trenchW/8), y: cy-arcR}; });
+      for(var p=0;p<5;p++){ var P=posts[p]; gO.beginPath(); gO.fillStyle='#0ea5e9'; gO.arc(P.x,P.y,7,0,Math.PI*2); gO.fill(); gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(p+1),P.x,P.y); }
+      for(var i2=0;i2<sim.shooters.length;i2++){ var s=sim.shooters[i2], postIdx=(s.post-1), P2=posts[postIdx]; var dx=-10+(i2*8), dy=14+(i2%2?6:0); gO.fillStyle=COLORS[i2%COLORS.length]; gO.beginPath(); gO.arc(P2.x+dx, P2.y+dy, 5, 0, Math.PI*2); gO.fill(); if(i2===sim.activeIdx){ gO.strokeStyle=COLORS[i2%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(P2.x+dx, P2.y+dy, 8, 0, Math.PI*2); gO.stroke(); } }
+    }else{
+      var cx=OW/2, cy=OH*0.9, scale=9*0.5;
+      gO.fillStyle='#6b7280'; gO.fillRect(cx-8,cy-6,16,12);
+      gO.strokeStyle='#e2e8f0'; gO.lineWidth=1;
+      for(var ydLine=16; ydLine<=27; ydLine++){
+        var r=ydLine*yd*scale; gO.beginPath(); gO.arc(cx,cy,r,Math.PI,Math.PI*2); gO.stroke();
+        if(ydLine%2===0){ gO.fillStyle='#334155'; gO.font='10px system-ui'; gO.textAlign='left'; gO.fillText(ydLine+' yd', cx+4, cy-r-2); }
+      }
+      var r27=27*yd*scale, left=Math.tan(-17*Math.PI/180)*(-r27), right=Math.tan(17*Math.PI/180)*(-r27);
+      gO.beginPath(); gO.moveTo(cx,cy); gO.lineTo(cx+left,cy-r27); gO.moveTo(cx,cy); gO.lineTo(cx+right,cy-r27); gO.strokeStyle='#cbd5e1'; gO.stroke();
+      for(var i=0;i<sim.shooters.length;i++){
+        var s=sim.shooters[i], yard=(sim.mode==='ATA_HANDICAP')?s.yardage:16, r2=yard*yd*scale, xOffset=POSTS_X[(s.post-1)]*scale, px=cx+xOffset, py=cy-r2;
+        gO.fillStyle=COLORS[i%COLORS.length]; gO.beginPath(); gO.arc(px,py,7,0,Math.PI*2); gO.fill();
+        gO.fillStyle='#fff'; gO.font='10px system-ui'; gO.textAlign='center'; gO.textBaseline='middle'; gO.fillText(String(i+1),px,py);
+        if(i===sim.activeIdx){ gO.strokeStyle=COLORS[i%COLORS.length]; gO.lineWidth=2; gO.beginPath(); gO.arc(px,py,11,0,Math.PI*2); gO.stroke(); }
+      }
     }
   }
 
   // initial debug
-  applyPauseUI(); dbg('ready'); log('Loaded v1.1.1b');
+  applyPauseUI(); dbg('ready'); log('Loaded v1.2.0');
 })();
 </script>
 </body></html>
