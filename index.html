@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="utf-8"/>
-<title>ClaySim — Unified Launcher v1.2.0</title>
+<title>ClaySim — Unified Launcher v1.2.1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
 :root{--sky:#cfe8ff;--ground:#bde5b4;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--accent:#4f46e5}
@@ -45,16 +45,11 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
       <div class="formRow"><label>Variant (Trap)</label>
         <div class="pillrow">
           <button id="vATA" class="active">ATA</button>
-          <button id="vBunker" class="disabled">Olympic/Bunker (now)</button>
+          <button id="vBunker">Olympic/Bunker</button>
         </div>
       </div>
       <div class="formRow" id="rowModes"><label>Game Mode</label>
-        <select id="modeSelect">
-          <option value="ATA_SINGLES">Singles (16 yd)</option>
-          <option value="ATA_HANDICAP">Handicap (18–27 yd)</option>
-          <option value="ATA_DOUBLES">Doubles</option>
-          <option value="OLYMPIC_TRAP">Olympic/Bunker Trap (Qual)</option>
-        </select>
+        <select id="modeSelect"></select>
       </div>
       <div class="formRow"><label>Number of Shooters</label>
         <select id="numShooters"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
@@ -117,6 +112,41 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
       playersDiv=document.getElementById('players'),
       btnStart=document.getElementById('btnStart');
 
+  // Variant state
+  var sim={ variant:'ATA', mode:'ATA_SINGLES',
+            shooters:[], activeIdx:0, shells:0, shotLock:false,
+            running:true, throwing:false, clays:[], pellets:[], bunkerSeq:null };
+
+  // Variant pills
+  var vATA=document.getElementById('vATA'), vBunker=document.getElementById('vBunker');
+  function setVariant(variant){
+    sim.variant = variant;
+    vATA.classList.toggle('active', variant==='ATA');
+    vBunker.classList.toggle('active', variant==='OLYMPIC');
+    populateModesForVariant();
+    updateHeaders();
+    buildPlayersUI(); // yardage UI only shows for ATA Handicap
+    drawOverhead();
+  }
+  vATA.onclick=function(){ setVariant('ATA'); };
+  vBunker.onclick=function(){ setVariant('OLYMPIC'); };
+
+  // Populate modes dynamically based on variant
+  function populateModesForVariant(){
+    if(sim.variant==='ATA'){
+      modeSel.innerHTML = ''
+        + '<option value="ATA_SINGLES">Singles (16 yd)</option>'
+        + '<option value="ATA_HANDICAP">Handicap (18–27 yd)</option>'
+        + '<option value="ATA_DOUBLES">Doubles</option>';
+      if(sim.mode.indexOf('ATA_')!==0) sim.mode='ATA_SINGLES';
+    }else{
+      modeSel.innerHTML = '<option value="OLY_QUAL">Qualification (2 shots)</option>';
+      if(sim.mode!=='OLY_QUAL') sim.mode='OLY_QUAL';
+    }
+    modeSel.value = sim.mode;
+    updateHeaders();
+  }
+
   // Overhead
   var overPanel=document.getElementById('overPanel');
   function toggleOverhead(){
@@ -132,10 +162,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     document.getElementById('btnPull').disabled = paused;
   }
   btnPause.onclick=function(){ paused=!paused; applyPauseUI(); };
-  document.addEventListener('visibilitychange', function(){
-    paused = document.hidden;
-    applyPauseUI();
-  });
+  document.addEventListener('visibilitychange', function(){ paused=document.hidden; applyPauseUI(); });
 
   // HUD
   var hudMode=document.getElementById('hudMode'),
@@ -184,15 +211,6 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   var hr=document.getElementById('hitRadiusScale'), hrVal=document.getElementById('hitRVal');
   hr.oninput=function(){hrVal.textContent=parseFloat(hr.value).toFixed(2)+'×'};
 
-  // sim state
-  var sim={
-    mode:'ATA_SINGLES',
-    shooters:[], activeIdx:0,
-    shells:0, shotLock:false, running:true, throwing:false,
-    clays:[], pellets:[],
-    bunkerSeq:null
-  };
-
   // players UI
   function playerCard(i,withY){
     var ydField=withY?('<div class="formRow"><label>Yardage</label><select id="p'+i+'ydg">'+['18','19','20','21','22','23','24','25','26','27'].map(function(v){return '<option '+(v==='18'?'selected':'')+'>'+v+'</option>';}).join('')+'</select></div>'):'';
@@ -205,44 +223,47 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   }
   function buildPlayersUI(){
     var n=parseInt(numShootersSel.value,10);
-    var withY=(modeSel.value==='ATA_HANDICAP'); // only handicap shows yardage
+    var withY=(sim.variant==='ATA' && modeSel.value==='ATA_HANDICAP');
     var html=''; for(var i=1;i<=n;i++) html+=playerCard(i,withY);
     playersDiv.innerHTML=html;
   }
   numShootersSel.onchange=buildPlayersUI;
-  modeSel.onchange=function(){ buildPlayersUI(); updateHeaders(); };
-  buildPlayersUI();
+  modeSel.onchange=function(){ sim.mode=modeSel.value; updateHeaders(); buildPlayersUI(); };
+  setVariant('ATA'); // initialize pills + modes
 
-  // headers per mode
+  // headers per mode/variant
   function updateHeaders(){
-    if(modeSel.value==='ATA_DOUBLES'){
-      sheetTitle.textContent='ATA Doubles — Score Sheet (25 pairs)';
-      sheetLegend.textContent='Top = 1st shot • Bottom = 2nd shot • X/ = dead • 0 = lost';
-      hudMode.textContent='ATA Doubles';
-    }else if(modeSel.value==='ATA_HANDICAP'){
-      sheetTitle.textContent='ATA Handicap — Score Sheet (25 targets)';
-      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
-      hudMode.textContent='ATA Handicap';
-    }else if(modeSel.value==='OLYMPIC_TRAP'){
+    if(sim.variant==='OLYMPIC'){
       sheetTitle.textContent='Olympic Trap (Qualification) — Score Sheet (25 targets)';
       sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
       hudMode.textContent='Olympic Trap';
+    }else if(sim.mode==='ATA_DOUBLES'){
+      sheetTitle.textContent='ATA Doubles — Score Sheet (25 pairs)';
+      sheetLegend.textContent='Top = 1st shot • Bottom = 2nd shot • X/ = dead • 0 = lost';
+      hudMode.textContent='ATA Doubles';
+    }else if(sim.mode==='ATA_HANDICAP'){
+      sheetTitle.textContent='ATA Handicap — Score Sheet (25 targets)';
+      sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
+      hudMode.textContent='ATA Handicap';
     }else{
       sheetTitle.textContent='ATA Singles — Score Sheet (25 targets)';
       sheetLegend.textContent='X = first-shot dead • / = second-shot dead • 0 = lost';
       hudMode.textContent='ATA Singles';
     }
   }
-  updateHeaders();
 
   // build round (Start / Apply)
   btnStart.onclick=function(){
-    var n=parseInt(numShootersSel.value,10); sim.mode=modeSel.value; sim.shooters=[];
+    var n=parseInt(numShootersSel.value,10);
+    sim.mode=modeSel.value; // in case user changed it
+    sim.shooters=[];
     for(var i=1;i<=n;i++){
-      var y=(sim.mode==='ATA_HANDICAP')?parseInt(document.getElementById('p'+i+'ydg').value||'18',10):16;
+      var y=(sim.variant==='ATA' && sim.mode==='ATA_HANDICAP')
+            ? parseInt(document.getElementById('p'+i+'ydg').value||'18',10)
+            : 16;
       sim.shooters.push({
         name:(document.getElementById('p'+i+'name').value||('Player '+i)),
-        yardage:(sim.mode==='ATA_HANDICAP')?Math.max(18,Math.min(27,y)):16,
+        yardage:(sim.variant==='ATA' && sim.mode==='ATA_HANDICAP')?Math.max(18,Math.min(27,y)):16,
         top:document.getElementById('p'+i+'top').value,
         bot:document.getElementById('p'+i+'bot').value,
         nextBarrel:'Top', post:i, col:1, shotsAtPost:0, pairsAtPost:0,
@@ -251,10 +272,11 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     }
     sim.activeIdx=0; sim.shells=0; sim.shotLock=false; sim.running=true; sim.throwing=false;
     sim.clays.length=0; sim.pellets.length=0;
-    sim.bunkerSeq = (sim.mode==='OLYMPIC_TRAP') ? makeBunkerRoundPattern() : null;
+    sim.bunkerSeq = (sim.variant==='OLYMPIC') ? makeBunkerRoundPattern() : null;
 
     buildScoreTable(sim.shooters.length); fillScoreNames(); drawOverhead(); setCameraToActiveShooter(); syncHUD(); highlight(sim.activeIdx, sim.shooters[sim.activeIdx].col);
-    hudStatus.textContent='Running'; applyPauseUI(); log('Applied: '+sim.mode+' for '+n+' shooter(s)');
+    updateHeaders();
+    hudStatus.textContent='Running'; applyPauseUI(); log('Applied: '+sim.variant+' / '+sim.mode+' for '+n+' shooter(s)');
   };
 
   // score table
@@ -304,8 +326,9 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     if(sim.shooters.length===0) return;
     sim.shooters.forEach(function(s,i){ s.col=1;s.post=i+1;s.shotsAtPost=0;s.pairsAtPost=0;s.nextBarrel='Top';s.lastMark=null;s.topMark=null;s.botMark=null; });
     sim.activeIdx=0;sim.shells=0;sim.shotLock=false;sim.throwing=false;sim.clays.length=0;sim.pellets.length=0;sim.running=true;
-    sim.bunkerSeq = (sim.mode==='OLYMPIC_TRAP') ? makeBunkerRoundPattern() : null;
+    sim.bunkerSeq = (sim.variant==='OLYMPIC') ? makeBunkerRoundPattern() : null;
     buildScoreTable(sim.shooters.length);fillScoreNames();drawOverhead();setCameraToActiveShooter();syncHUD();highlight(sim.activeIdx,sim.shooters[sim.activeIdx].col);
+    updateHeaders();
     hudStatus.textContent='Running'; applyPauseUI(); log('Round reset');
   }
 
@@ -314,7 +337,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     var s=sim.shooters[sim.activeIdx];
     hudShooter.textContent=s.name;
     hudPost.textContent='Post '+s.post;
-    hudYdg.textContent=(sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):(sim.mode==='OLYMPIC_TRAP'?'Bunker':'16 yd');
+    hudYdg.textContent=(sim.variant==='ATA' && sim.mode==='ATA_HANDICAP')?(s.yardage+' yd'):(sim.variant==='OLYMPIC'?'Bunker':'16 yd');
     hudShells.textContent='Shells: '+sim.shells+'/2';
   }
 
@@ -322,8 +345,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     if(sim.shooters.length===0) return;
     var s=sim.shooters[sim.activeIdx], postIndex=(s.post-1);
     camX=POSTS_X[postIndex];
-    // For bunker we stay around 16 yd equivalent; camera is just for perspective drawing here
-    var yUsed=(sim.mode==='ATA_HANDICAP')?s.yardage:16; camY= - yUsed*yd; camZ=1.5;
+    var yUsed=(sim.variant==='ATA' && sim.mode==='ATA_HANDICAP')?s.yardage:16; camY= - yUsed*yd; camZ=1.5;
   }
 
   // --- Olympic (Bunker) sequence: each station block of 5 = 2L,2R,1C randomized
@@ -337,13 +359,14 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     return seq; // length 25 of 'L'/'R'/'C'
   }
 
-  // throwing: ATA
+  // throwing: ATA (singles)
   function throwAtaSingle(){
     var az=(Math.random()*34-17)*Math.PI/180, y10=9.144, h10=2.44+Math.random()*(3.05-2.44), v=31+(Math.random()-0.5)*2, bestTh=0.2,bestErr=1e-9;
     for(var deg=6;deg<=24;deg+=0.1){ var th=deg*Math.PI/180, vy=v*Math.cos(th)*Math.cos(az), t10=y10/Math.max(0.1,vy), z10=0.5+v*Math.sin(th)*t10-0.5*g*t10*t10, err=Math.abs(z10-h10); if(err<bestErr){bestErr=err;bestTh=th;} }
     var thFinal=bestTh;
     sim.clays.push({x:0,y:0,z:0.5,vx:(v*Math.cos(thFinal)*Math.sin(az)),vy:(v*Math.cos(thFinal)*Math.cos(az)),vz:(v*Math.sin(thFinal)),broken:false,owner:sim.activeIdx,col:sim.shooters[sim.activeIdx].col});
   }
+  // throwing: ATA (doubles pair)
   function throwAtaPair(){
     function one(az){ var y10=9.144,h10=2.44+Math.random()*(3.05-2.44),v=30.5+(Math.random()-0.5)*1.5,bestTh=0.2,bestErr=1e-9;
       for(var deg=6;deg<=24;deg+=0.2){ var th=deg*Math.PI/180,vy=v*Math.cos(th)*Math.cos(az),t10=y10/Math.max(0.1,vy),z10=0.5+v*Math.sin(th)*t10-0.5*g*t10*t10,err=Math.abs(z10-h10); if(err<bestErr){bestErr=err;bestTh=th;} }
@@ -351,40 +374,30 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
     }
     var azL=(-10-Math.random()*7)*Math.PI/180, azR=(10+Math.random()*7)*Math.PI/180; sim.clays.push(one(azL)); sim.clays.push(one(azR));
   }
-
   // throwing: Olympic/Bunker (single)
   function throwBunkerSingle(){
     var idx = sim.shooters[sim.activeIdx].col; // 1..25 within the round
     var dir = sim.bunkerSeq ? sim.bunkerSeq[idx-1] : ['L','R','C'][Math.floor(Math.random()*3)];
 
-    // ISSF-ish ranges: ±15..45° azimuth, height 1.5–3.0 m @10m, ~38–41 m/s speed, 76 m range.
+    // Wider angles, 1.5–3.0m @10m, faster speed
     var az;
-    if(dir==='L'){ az = -(15 + Math.random()*30) * Math.PI/180; }     // -15° .. -45°
-    else if(dir==='R'){ az =  (15 + Math.random()*30) * Math.PI/180; } // +15° .. +45°
-    else { az = (Math.random()*6 - 3) * Math.PI/180; }                 // near center
+    if(dir==='L'){ az = -(15 + Math.random()*30) * Math.PI/180; }
+    else if(dir==='R'){ az =  (15 + Math.random()*30) * Math.PI/180; }
+    else { az = (Math.random()*6 - 3) * Math.PI/180; }
 
-    var y10 = 10.0;                     // meters downrange for height spec
-    var h10 = 1.5 + Math.random()*1.5;  // 1.5 .. 3.0 m height at 10 m
-    var v   = 38.5 + (Math.random()*3.0); // ~38–41 m/s
-
+    var y10 = 10.0, h10 = 1.5 + Math.random()*1.5, v = 38.5 + (Math.random()*3.0);
     var bestTh=0.2, bestErr=1e9;
     for(var deg=6; deg<=24; deg+=0.1){
-      var th=deg*Math.PI/180;
-      var vy=v*Math.cos(th)*Math.cos(az);
-      var t10=y10/Math.max(0.1,vy);
-      var z10=0.5 + v*Math.sin(th)*t10 - 0.5*g*t10*t10;
-      var err=Math.abs(z10 - h10);
+      var th=deg*Math.PI/180, vy=v*Math.cos(th)*Math.cos(az), t10=y10/Math.max(0.1,vy);
+      var z10=0.5 + v*Math.sin(th)*t10 - 0.5*g*t10*t10, err=Math.abs(z10 - h10);
       if(err<bestErr){ bestErr=err; bestTh=th; }
     }
     var thFinal=bestTh;
-
-    sim.clays.push({
-      x:0,y:0,z:0.5,
+    sim.clays.push({ x:0,y:0,z:0.5,
       vx:(v*Math.cos(thFinal)*Math.sin(az)),
       vy:(v*Math.cos(thFinal)*Math.cos(az)),
       vz:(v*Math.sin(thFinal)),
-      broken:false, owner:sim.activeIdx, col:sim.shooters[sim.activeIdx].col
-    });
+      broken:false, owner:sim.activeIdx, col:sim.shooters[sim.activeIdx].col });
   }
 
   function loadGun(){ sim.shells=2; sim.shotLock=false; sim.shooters[sim.activeIdx].nextBarrel='Top'; syncHUD(); }
@@ -396,7 +409,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
       loadGun(); sim.throwing=true; throwAtaPair(); log('Pair thrown.');
     }else{
       loadGun(); sim.throwing=true;
-      if(sim.mode==='OLYMPIC_TRAP'){ throwBunkerSingle(); log('Bunker target thrown.'); }
+      if(sim.variant==='OLYMPIC'){ throwBunkerSingle(); log('Bunker target thrown.'); }
       else { throwAtaSingle(); log('ATA target thrown.'); }
     }
   }
@@ -468,15 +481,15 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   }
 
   // render (perspective)
+  var yd=0.9144; // (redeclare to ensure scope after minifiers)
   function renderShooter(){
     gS.clearRect(0,0,cS.width,cS.height);
     gS.strokeStyle='rgba(0,0,0,0.08)';
     for(var gy=2;gy<=60;gy+=2){ var a=project(-25*yd,gy*yd,0),b=project(25*yd,gy*yd,0); gS.beginPath(); gS.moveTo(a.x,a.y); gS.lineTo(b.x,b.y); gS.stroke(); }
     for(var gx=-25;gx<=25;gx+=2){ var a2=project(gx*yd,2*yd,0),b2=project(gx*yd,60*yd,0); gS.beginPath(); gS.moveTo(a2.x,a2.y); gS.lineTo(b2.x,b2.y); gS.stroke(); }
 
-    // trap house (ATA) / trench (bunker) visual hint
-    if(sim.mode==='OLYMPIC_TRAP'){
-      // trench slab
+    // trap house (ATA) / trench (bunker)
+    if(sim.variant==='OLYMPIC'){
       var tL=project(-15,0,-0.1), tR=project(15,0,-0.1), tL2=project(-16,-0.5,0.3), tR2=project(16,-0.5,0.3);
       gS.fillStyle='#4b5563'; gS.beginPath(); gS.moveTo(tL.x,tL.y); gS.lineTo(tR.x,tR.y); gS.lineTo(tR2.x,tR2.y); gS.lineTo(tL2.x,tL2.y); gS.closePath(); gS.fill(); gS.strokeStyle='#1f2937'; gS.stroke();
     }else{
@@ -503,10 +516,10 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   }
   requestAnimationFrame(renderShooter);
 
-  // overhead (ATA rings or Bunker trench)
+  // overhead
   function drawOverhead(){
     gO.clearRect(0,0,OW,OH);
-    if(sim.mode==='OLYMPIC_TRAP'){
+    if(sim.variant==='OLYMPIC'){
       var cx=OW/2, cy=OH*0.88;
       var trenchW=240, trenchH=10;
       gO.fillStyle='#475569'; gO.fillRect(cx-trenchW/2, cy-4, trenchW, trenchH);
@@ -535,7 +548,7 @@ input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;
   }
 
   // initial debug
-  applyPauseUI(); dbg('ready'); log('Loaded v1.2.0');
+  applyPauseUI(); dbg('ready'); log('Loaded v1.2.1');
 })();
 </script>
 </body></html>
